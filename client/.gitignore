@@ -1,0 +1,6 @@
+.env
+/logs
+**/tmp
+*.json
+.config.json
+file_tree.json
