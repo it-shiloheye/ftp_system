@@ -39,26 +39,38 @@ func (gte *GitEngine) dir_commit(directory string) (err error) {
 	ctx := gte.ctx.NewChild()
 	var buf []byte
 	var stderr string
-	for _, command := range []string{"git add .", fmt.Sprintf("git commit -m \"%s\"", time.Now())} {
-		c := strings.Split(command, " ")
+	for _, command := range [][]string{
+		strings_split("git add .", " "),
+		[]string{
+			"git", "commit", fmt.Sprintf("-m \"%s\"", time.Now().Format(time.RFC1123)),
+		},
+	} {
 
 		for retry := true; retry; {
-			buf, stderr, err = ExecuteCommand(ctx, directory, c[0], c[1:]...)
+			buf, stderr, err = ExecuteCommand(ctx, directory, command[0], command[1:]...)
 			if err != nil {
-				log.Println(stderr, "\n", err)
-				return
-			}
-			log.Println(string(buf))
-			retry, err = handle_common_git_errors(ctx, directory, stderr, err)
-			if err != nil {
-				err = ftp_context.NewLogItem(loc, true).
-					ParentError(err).
-					Set("after", "handle_common_git_errors").
-					Set("error_msg", err.Error()).
-					SetMessage("failed to retry")
+				log.Println("trying to handle error:\n", stderr)
+				retry, err = handle_common_git_errors(ctx, directory, stderr, err)
+				if err != nil {
+					err = ftp_context.NewLogItem(loc, true).
+						ParentError(err).
+						Set("after", "handle_common_git_errors").
+						Set("error_msg", err.Error()).
+						SetMessage("failed to retry")
 
-				return
+					return
+				} else {
+					log.Println("able to handle error")
+				}
+				if !retry {
+					return
+				}
+			} else {
+				retry = false
+				log.Println(string(buf))
+				break
 			}
+
 		}
 
 		clear_stderr(ctx)
@@ -77,18 +89,19 @@ func ExecuteCommand(ctx ftp_context.Context, dir string, command string, arg ...
 	loc := "ExecuteCommand"
 	cmd := exec.CommandContext(ctx, command, arg...)
 	cmd.Dir = dir
-	fmt.Println(cmd)
+	fmt.Println(cmd, "\npwd:", dir)
 	var std_out bytes.Buffer
 	var std_err bytes.Buffer
 	cmd.Stdout = &std_out
 	cmd.Stderr = &std_err
 	if err = cmd.Start(); err != nil {
 		msg := err.Error()
-		err = ftp_context.NewLogItem("ExecuteCommand", true).
+		err = ftp_context.NewLogItem(loc, true).
 			ParentError(err).
 			Set("after", "cmd.Start()").
 			Set("error_msg", msg).
 			SetMessage("")
+		cmd.Cancel()
 		return
 	}
 
@@ -96,11 +109,10 @@ func ExecuteCommand(ctx ftp_context.Context, dir string, command string, arg ...
 	stdout = std_out.Bytes()
 	stderr = std_err.String()
 
-	if len(stdout) > 0 {
-		log.Println("outout", stdout)
-	}
 	if err != nil {
-		err = set_stderr(ctx, loc, stderr, err)
+		a := append([]string{command}, arg...)
+		err = set_stderr(ctx, strings.Join(a, " "), stderr, err)
+
 	}
 
 	return
@@ -109,15 +121,28 @@ func ExecuteCommand(ctx ftp_context.Context, dir string, command string, arg ...
 func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr string, cmd_err error) (retry bool, err error) {
 	loc := "handle_common_git_errors"
 	var buf []byte
-	child_count := child_count_f(ctx)
-
-	if child_count > 5 {
-		err = ftp_context.NewLogItem(loc, true).SetMessage("recursion too deep").ParentError(cmd_err)
-		return
-	}
+	fmt.Println(loc)
+	dec_child_count_f(ctx)
+	defer dec_child_count_f(ctx)
 
 	if strings.Contains(stderr, "not a git repository") {
-		c := strings.Split("git init .", " ")
+		log.Println("not a git repository")
+		c := strings_split("git init .", " ")
+		buf, stderr, err = ExecuteCommand(ctx, directory, c[0], c[1:]...)
+
+		if err != nil {
+			log.Println(err)
+			return handle_common_git_errors(ctx, directory, stderr, err)
+		}
+		log.Println(string(buf))
+		return true, nil
+	} else {
+		retry = false
+	}
+
+	if string_contains_multiple(stderr, "The process", "git", "not found.") {
+		log.Println("The process: \"git\" not found.")
+		c := strings_split("rm "+directory+"/.git/index.lock", " ")
 		buf, stderr, err = ExecuteCommand(ctx, directory, c[0], c[1:]...)
 
 		if err != nil {
@@ -131,30 +156,42 @@ func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr 
 		retry = false
 	}
 
-	if string_contains_multiple(stderr, "fatal: Unable to create", ".git/index.lock: File exists.", "Another git process seems to be running in this repository") {
-		c := strings.Split("taskkill -im git -f", " ")
+	if strings.Contains(stderr, "Another git process seems to be running in this repository") {
+		log.Println("Another git process seems to be running")
+		c := strings_split("taskkill -im git -f", " ")
 		buf, stderr, err = ExecuteCommand(ctx, directory, c[0], c[1:]...)
 
 		if err != nil {
-			log.Fatalln(err)
-			return
+			log.Println(err)
+			return handle_common_git_errors(ctx, directory, stderr, err)
 		}
 		log.Println(string(buf))
-
-		c = strings.Split("rm -Force .git/index.lock", " ")
-		buf, stderr, err = ExecuteCommand(ctx, directory, c[0], c[1:]...)
-
-		if err != nil {
-			log.Fatalln(err)
-			return
-		}
-		log.Println(string(buf))
-
-		return true, nil
-	} else {
-		retry = false
+		retry = true
+		return
 	}
+	// if string_contains_multiple(stderr, "fatal: Unable to create", "File exists.", "lock") {
+	// 	log.Println("Unable to create commit")
+	// 	c := strings_split("taskkill -im git -f", " ")
+	// 	buf, stderr, err = ExecuteCommand(ctx, directory, c[0], c[1:]...)
 
+	// 	if err != nil {
+	// 		log.Fatalln(err)
+	// 		return
+	// 	}
+	// 	log.Println(string(buf))
+
+	// 	c = strings_split("rm -Force .git/index.lock", " ")
+	// 	buf, stderr, err = ExecuteCommand(ctx, directory, c[0], c[1:]...)
+
+	// 	if err != nil {
+	// 		log.Fatalln(err)
+	// 		return
+	// 	}
+	// 	log.Println(string(buf))
+	// 	return true, nil
+	// } else {
+	// 	retry = false
+	// }
 	return
 }
 
@@ -169,16 +206,12 @@ func string_contains_multiple(str string, substrs ...string) bool {
 	return true
 }
 
-func child_count_f(ctx ftp_context.Context) (n int) {
-	cc := "child_count"
-	_n, ok := ctx.Get(cc)
-	if !ok {
-		ctx.Set(cc, 1)
-		return 1
-	}
-	n, _ = _n.(int)
-	n += 1
-	ctx.Set(cc, n)
+func inc_child_count_f(ctx ftp_context.Context) (n int) {
+	fmt.Println(ctx)
+	return
+}
+func dec_child_count_f(ctx ftp_context.Context) (n int) {
+	fmt.Println(ctx)
 	return
 }
 
@@ -189,7 +222,7 @@ func set_stderr(ctx ftp_context.Context, loc string, stderr string, err error) (
 		ParentError(err).
 		Set("after", loc).
 		Set("error_msg", msg).
-		Set("stderr", string(stderr)).
+		Set("stderr", strings_split(string(stderr), "\n")).
 		ParentError(err)
 
 	ctx.Set(cc, cmp_err)
@@ -226,4 +259,18 @@ func clear_stderr(ctx ftp_context.Context) (old_stderr ftp_context.LogErr) {
 
 	old_stderr, ok = _old_stderr.(ftp_context.LogErr)
 	return
+}
+
+func strings_split(str string, substr string) (out []string) {
+	a := strings.Split(str, substr)
+	b := ""
+	for _, s := range a {
+		b = strings.Trim(s, "\t\n\r")
+		if len(s) > 0 {
+			out = append(out, b)
+		}
+	}
+
+	return
+
 }

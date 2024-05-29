@@ -1,6 +1,7 @@
 package base
 
 import (
+	"log"
 	"sync"
 	"sync/atomic"
 )
@@ -20,15 +21,19 @@ func NewMutexedMap[T any]() MutexedMap[T] {
 }
 
 func (mm *MutexedMap[T]) Set(key string, value T) {
+	log.Println("MutexedMap[T] set", key)
 	mm.Lock()
 	mm.M[key] = value
 	mm.Unlock()
+	log.Println("MutexedMap[T] unlocked set", key)
 }
 
 func (mm *MutexedMap[T]) Get(key string) (t T, ok bool) {
+	log.Println("MutexedMap[T] ", key)
 	mm.RLock()
 	t, ok = mm.M[key]
 	mm.RUnlock()
+	log.Println("MutexedMap[T] unlocked", key)
 	return
 }
 
