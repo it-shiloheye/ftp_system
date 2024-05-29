@@ -7,8 +7,8 @@ import (
 )
 
 type FileTreeStruct struct {
-	Directory string      `json:"directory"`
-	FilesList []FileBasic `json:"files_list"`
+	Directory string     `json:"directory"`
+	FilesList []FileHash `json:"files_list"`
 
 	LastUpload time.Time               `json:"last_upload"`
 	LastHash   time.Time               `json:"last_hash"`

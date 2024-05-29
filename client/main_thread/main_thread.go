@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ftp_system_client/main_thread/actions"
 	configuration "github.com/ftp_system_client/main_thread/config"
 	ftp_context "github.com/ftp_system_client/main_thread/context"
 	filehandler "github.com/ftp_system_client/main_thread/file_handler"
@@ -57,8 +58,12 @@ func MainThread(ctx ftp_context.Context) context.Context {
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
-			for _, f := range ls {
+			for _, f := range ls[:5] {
 				fmt.Println(f.Path, " found")
+			}
+			act_err := actions.Write_directory_files_list(directory, ls)
+			if act_err != nil {
+				log.Fatalln(act_err)
 			}
 
 			err = gte.Commit(directory)

@@ -1,15 +1,11 @@
 package configuration
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io/fs"
+	"github.com/ftp_system_client/main_thread/actions"
 	"log"
 	"os"
 	"strings"
-
-	"github.com/ftp_system_client/base"
 )
 
 type Identity string
@@ -61,7 +57,7 @@ func get_path() string {
 }
 
 func init() {
-	err := base.ReadJson(get_path(), &Config)
+	err := actions.ReadJson(get_path(), &Config)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 
@@ -76,22 +72,6 @@ func init() {
 }
 
 func (cfg *ConfigStruct) Write() (err error) {
-	config_text, err := json.MarshalIndent(cfg, " ", "\t")
-	if err != nil {
-		err = fmt.Errorf("json.MarshalIndent %s", err.Error())
-		return
-	}
-
-	err = os.MkdirAll(cfg.DataDir, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
-	if err != nil {
-		err = fmt.Errorf("os.MkdirAll %s", err.Error())
-		return
-	}
-	err = base.WriteFile(get_path(), config_text)
-	if err != nil {
-		err = fmt.Errorf("base.WriteFile %s", err.Error())
-		return
-	}
-
+	err = actions.WriteJson(cfg.DataDir, "config", cfg)
 	return
 }

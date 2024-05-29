@@ -12,7 +12,7 @@ import (
 	filehandler "github.com/ftp_system_client/main_thread/file_handler"
 )
 
-func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr string, cmd_err error) (retry bool, err error) {
+func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr string, cmd_err error) (retry bool, err *ftp_context.LogItem) {
 	loc := "handle_common_git_errors"
 	var buf []byte
 	fmt.Println(loc)
@@ -26,7 +26,8 @@ func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr 
 
 		if err != nil {
 			log.Println(err)
-			return handle_common_git_errors(ctx, directory, stderr, err)
+
+			return handle_common_git_errors(ctx, directory, stderr, err.AppendParentError(err))
 		}
 		log.Println(string(buf))
 
@@ -38,14 +39,14 @@ func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr 
 		if err = fo_2.Err; err != nil {
 			return
 		}
-		buf, err = fo_2.ReadAll()
-		if err != nil {
+		buf, _ = fo_2.ReadAll()
+		if fo_2.Err != nil {
 			return
 		}
 
-		_, err = fo.Write(buf)
-		if err != nil {
-			return
+		fo.Write(buf)
+		if fo.Err != nil {
+			return false, fo.Err
 		}
 
 		return true, nil
@@ -57,7 +58,7 @@ func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr 
 
 		// if err != nil {
 		// 	log.Println(err)
-		// 	return handle_common_git_errors(ctx, directory, stderr, err)
+		// 	return handle_common_git_errors(ctx, directory, stderr, ftp_context.NewLogItem(loc,true).AppendParentError(err))
 		// }
 		// log.Println(string(buf))
 
@@ -71,7 +72,7 @@ func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr 
 
 		if err != nil {
 			log.Println(err)
-			return handle_common_git_errors(ctx, directory, stderr, err)
+			return handle_common_git_errors(ctx, directory, stderr, ftp_context.NewLogItem(loc, true).Set("original_error", cmd_err).AppendParentError(err))
 		}
 		log.Println(string(buf))
 		retry = true
@@ -85,7 +86,7 @@ func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr 
 
 		if err != nil {
 			log.Println(err)
-			return handle_common_git_errors(ctx, directory, stderr, err)
+			return handle_common_git_errors(ctx, directory, stderr, ftp_context.NewLogItem(loc, true).Set("original_error", cmd_err).AppendParentError(err))
 		}
 		log.Println(string(buf))
 		retry = true

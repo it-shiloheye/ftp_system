@@ -11,7 +11,7 @@ type GitStateStruct struct {
 	LastCommit       string    `json:"last_commit"`
 	MostRecentChange time.Time `json:"most_recent_change"`
 
-	CommitMessage filehandler.FileBasic   `json:"commit_message"`
-	PendingFiles  []*filehandler.FileHash `json:"PendingFile"`
-	UploadedFiles map[string]*filehandler.FileHash
+	CommitMessage filehandler.FileBasic            `json:"commit_message"`
+	PendingFiles  []*filehandler.FileHash          `json:"PendingFile"`
+	UploadedFiles map[string]*filehandler.FileHash `json:"uploaded_files"`
 }
