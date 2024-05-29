@@ -1,6 +1,7 @@
 package filehandler
 
 import (
+	"bytes"
 	"io"
 	"io/fs"
 	"strings"
@@ -15,6 +16,7 @@ import (
 type FileBasic struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
+	Err  error  `json:"error"`
 	fo   *os.File
 	fs   os.FileInfo
 	d    fs.DirEntry
@@ -26,6 +28,13 @@ func (fo *FileBasic) Read(buf []byte) (n int, err error) {
 		err = ftp_context.NewLogItem("FileBasic.Read", true).SetMessagef("io.ReadFull %s error:\n%s", fo.Path, err.Error())
 	}
 	return
+}
+
+func (fo *FileBasic) Write(buf []byte) (n int, err error) {
+	_n, err := io.CopyN(fo.fo, bytes.NewReader(buf), int64(len(buf)))
+	n = int(_n)
+	return
+
 }
 
 func (fo *FileBasic) IsOpen() bool {
@@ -44,23 +53,24 @@ func (fo *FileBasic) ModTime() string {
 	return fo.fs.ModTime().Format(time.RFC822Z)
 }
 
-func (fo *FileBasic) Open() (ok bool, err error) {
+func (fo *FileBasic) Open() *FileBasic {
 	if fo.fo != nil {
-		return true, nil
+		return fo
 	}
 
-	fo.fo, err = base.OpenFile(fo.Path, os.O_RDWR|os.O_SYNC)
-	if err != nil {
-		err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("base.OpenFile %s error:\n%s", fo.Path, err.Error())
-	}
-	ok = true
-
-	fo.fs, err = fo.fo.Stat()
-	if err != nil {
-		err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("fo.fo.Stat %s error:\n%s", fo.Path, err.Error())
+	fo.fo, fo.Err = base.OpenFile(fo.Path, os.O_RDWR|os.O_SYNC)
+	if fo.Err != nil {
+		fo.Err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("base.OpenFile %s error:\n%s", fo.Path, fo.Err.Error())
+		return fo
 	}
 
-	return
+	fo.fs, fo.Err = fo.fo.Stat()
+	if fo.Err != nil {
+		fo.Err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("fo.fo.Stat %s error:\n%s", fo.Path, fo.Err.Error())
+		return fo
+	}
+
+	return fo
 }
 
 func (fo *FileBasic) Ext() string {
@@ -72,4 +82,62 @@ func (fo *FileBasic) Ext() string {
 	}
 
 	return stp_3
+}
+
+func (fo *FileBasic) Create() *FileBasic {
+	if fo.fo != nil {
+		return fo
+	}
+
+	fo.fo, fo.Err = base.OpenFile(fo.Path, os.O_RDWR|os.O_SYNC|os.O_CREATE)
+	if fo.Err != nil {
+		fo.Err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("base.OpenFile %s error:\n%s", fo.Path, fo.Err.Error())
+
+		return fo
+	}
+	fo.fs, fo.Err = fo.fo.Stat()
+	if fo.Err != nil {
+		fo.Err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("fo.fo.Stat %s error:\n%s", fo.Path, fo.Err.Error())
+		return fo
+	}
+
+	return fo
+}
+
+func (fo *FileBasic) CreateWithDir() *FileBasic {
+	if fo.fo != nil {
+		return fo
+	}
+
+	_dir := strings.Split(fo.Path, "\\")
+	l := len(_dir) - 2
+	if l > 1 {
+		dir := _dir[:l]
+
+		fo.Err = os.MkdirAll(strings.Join(dir, "\\"), fs.FileMode(base.S_IRWXO|base.S_IRWXU))
+		if fo.Err != nil {
+			return fo
+		}
+	}
+
+	fo.fo, fo.Err = base.OpenFile(fo.Path, os.O_RDWR|os.O_SYNC)
+	if fo.Err != nil {
+		fo.Err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("base.OpenFile %s error:\n%s", fo.Path, fo.Err.Error())
+		return fo
+	}
+
+	fo.fs, fo.Err = fo.fo.Stat()
+	if fo.Err != nil {
+		fo.Err = ftp_context.NewLogItem("FileBasic.Open", true).SetMessagef("fo.fo.Stat %s error:\n%s", fo.Path, fo.Err.Error())
+		return fo
+	}
+
+	return fo
+}
+
+func NewFileBasic(path string) (fo *FileBasic) {
+	fo = &FileBasic{
+		Path: path,
+	}
+	return
 }
