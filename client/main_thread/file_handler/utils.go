@@ -27,11 +27,16 @@ func ReadDir(ctx ftp_context.Context, dir_path string, exclude []string) (files 
 			}
 		}
 
-		files = append(files, FileBasic{
+		fo := FileBasic{
 			Name: d.Name(),
 			Path: path,
+			Type: "",
 			d:    d,
-		})
+		}
+
+		fo.Ext()
+		
+		files = append(files, fo)
 
 		return nil
 	})

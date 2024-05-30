@@ -12,13 +12,13 @@ func Write_directory_files_list(dir_path string, files []filehandler.FileBasic) 
 
 	name := func() string {
 		a := time.Now()
-		b := fmt.Sprintf("files/%d/%d_%d.json", a.Year(), a.Month(), a.Day())
+		b := fmt.Sprintf("files/%d/%02d_%02d.json", a.Year(), a.Month(), a.Day())
 		return b
 	}()
 
 	txt_file := filehandler.NewFileBasic(dir_path + "\\" + name)
 
-	err = txt_file.CreateWithDir().
+	err = txt_file.Create().
 		WriteJson(files)
 
 	return

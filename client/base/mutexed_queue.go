@@ -1,78 +1,75 @@
 package base
 
 import (
+	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 type MutexedQueue[T any] struct {
 	sync.RWMutex
-	Queue []T `json:"queue"`
-	count atomic.Int64
+	Queue   MutexedMap[T] `json:"queue"`
+	Done    JsonAtomicInt `json:"done"`
+	Pending JsonAtomicInt `json:"pending"`
+	queue_c chan int64
 }
 
 func NewMutexedQueue[T any]() (Mq *MutexedQueue[T]) {
 	Mq = &MutexedQueue[T]{
-		Queue: make([]T, 10),
-		count: atomic.Int64{},
+		Queue:   NewMutexedMap[T](),
+		queue_c: make(chan int64),
+		Done:    JsonAtomicInt{},
+		Pending: JsonAtomicInt{},
 	}
 
-	Mq.count.Store(0)
+	Mq.Done.Store(0)
+	Mq.Pending.Store(0)
 	return
 }
 
-func (mq *MutexedQueue[T]) Enqueue(item T) {
-	mq.Lock()
-	mq.Queue = append(mq.Queue, item)
-	mq.Unlock()
-
+func str_conv(n int64) string {
+	return fmt.Sprintf("%d", n)
 }
 
-func (mq *MutexedQueue[T]) Dequeue() <-chan T {
-	c := make(chan T, 1)
-	n := mq.count.Load()
-	for !mq.count.CompareAndSwap(n, n+1) {
-		<-time.After(time.Microsecond * 10)
-		n = mq.count.Load()
+func (mq *MutexedQueue[T]) Enqueue(item T) (retry bool) {
+	n := mq.Pending.Load()
+	if !mq.Pending.CompareAndSwap(n, n+1) {
+		<-time.After(time.Microsecond * 60)
 
+		return mq.Enqueue(item)
 	}
+	mq.Queue.Set(str_conv(n), item)
+	mq.queue_c <- n
+	return false
+}
 
-	mq.RLock()
-	t := mq.Queue[n]
-	mq.RUnlock()
-	c <- t
-	close(c)
-	return c
+func (mq *MutexedQueue[T]) Dequeue() <-chan int64 {
+	return mq.queue_c
 }
 
 func (mq *MutexedQueue[T]) Len() (n int64) {
-	mq.RLock()
-	n = int64(len(mq.Queue))
-	mq.RUnlock()
 
-	return
+	return mq.Queue.count.Load()
 }
 
 func (mq *MutexedQueue[T]) Clear() {
 	mq.Lock()
-	clear(mq.Queue)
-	mq.count.Store(0)
+	mq.Queue.Clear()
+	mq.queue_c = make(chan int64)
+	mq.Done.Store(0)
+	mq.Pending.Store(0)
 	mq.Unlock()
 
 }
 
-func (mq *MutexedQueue[T]) Pos() (n int64) {
-	return mq.count.Load()
-}
-
-func (mq *MutexedQueue[T]) Get(n int) (it T, ok bool) {
-	if n >= int(mq.Len()) {
+func (mq *MutexedQueue[T]) Get(n int64) (it T, ok bool) {
+	if n >= mq.Len() || n < 0 {
 		return
 	}
-	mq.RLock()
-	it = mq.Queue[n]
-	mq.RUnlock()
+	return mq.Queue.Get(str_conv(n))
+}
 
-	return
+func (mq *MutexedQueue[T]) MarkDone(n int64) {
+	mq.Done.Add(1)
+	mq.Queue.Delete(str_conv(n))
 }

@@ -24,6 +24,10 @@ func MainThread(ctx ftp_context.Context) context.Context {
 		log.Fatalln("invalid config type")
 	}
 
+	if len(config.Include) < 1 {
+		log.Fatalln("add at least one file to include list")
+	}
+
 	gte := githandler.GitEngine{}
 	gte.Init(ctx.NewChild())
 
@@ -33,6 +37,7 @@ func MainThread(ctx ftp_context.Context) context.Context {
 
 		child_ctx := ctx.NewChild()
 		child_ctx.SetDeadline(tick)
+		log.Println("starting git cycle")
 		/**
 		* five tasks:
 		*	1. Read all files in directory
@@ -49,9 +54,6 @@ func MainThread(ctx ftp_context.Context) context.Context {
 		*	5. Transmit over network any new changes where necessary
 		 */
 
-		if len(config.Include) < 1 {
-			log.Fatalln("add at least one file to include list")
-		}
 		for _, directory := range config.Include {
 			log.Println("loading ", directory)
 			ls, err := filehandler.ReadDir(child_ctx, directory, append(config.Exclude, ".git"))

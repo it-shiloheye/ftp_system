@@ -94,7 +94,7 @@ func ExecuteCommand(ctx ftp_context.Context, dir string, command string, arg ...
 	loc := "ExecuteCommand"
 	cmd := exec.CommandContext(ctx, command, arg...)
 	cmd.Dir = dir
-	fmt.Println(cmd, "\npwd:", dir)
+	log.Println(cmd, "\npwd:", dir)
 	var std_out bytes.Buffer
 	var std_err bytes.Buffer
 	cmd.Stdout = &std_out
@@ -125,36 +125,11 @@ func ExecuteCommand(ctx ftp_context.Context, dir string, command string, arg ...
 
 // internally handles retrying commit command in case of error
 func execute_commit_step(ctx ftp_context.Context, directory string, command []string) (output string, stderr string, err error) {
-	loc := "execute_commit_step"
 	var buf []byte
-
-	for retry := true; retry; {
-		buf, stderr, err = ExecuteCommand(ctx, directory, command[0], command[1:]...)
-		if err != nil {
-			log.Println("trying to handle error:\n", stderr)
-			retry, err = handle_common_git_errors(ctx, directory, stderr, err)
-			if err != nil {
-				err = ftp_context.NewLogItem(loc, true).
-					AppendParentError(err).
-					Set("after", "handle_common_git_errors").
-					Set("error_msg", err.Error()).
-					SetMessage("failed to retry")
-
-				return
-			} else {
-				log.Println("able to handle error")
-			}
-			if !retry {
-				return
-			}
-		} else {
-			retry = false
-			output = string(buf)
-			break
-		}
-
+	buf, stderr, err = ExecuteCommand(ctx, directory, "git", command...)
+	if len(stderr) < 1 {
+		err = nil
 	}
-
-	clear_stderr(ctx)
+	output = string(buf)
 	return
 }

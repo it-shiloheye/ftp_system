@@ -92,6 +92,5 @@ func handle_common_git_errors(ctx ftp_context.Context, directory string, stderr 
 		retry = true
 		return
 	}
-	log.Fatalln(err)
 	return
 }

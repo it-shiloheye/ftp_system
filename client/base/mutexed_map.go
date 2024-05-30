@@ -25,6 +25,7 @@ func (mm *MutexedMap[T]) Set(key string, value T) {
 	mm.Lock()
 	mm.M[key] = value
 	mm.Unlock()
+	mm.count.Add(1)
 	// log.Println("MutexedMap[T] unlocked set", key)
 }
 
@@ -40,7 +41,9 @@ func (mm *MutexedMap[T]) Get(key string) (t T, ok bool) {
 func (mm *MutexedMap[T]) Clear() {
 	mm.Lock()
 	clear(mm.M)
+	mm.count.Store(0)
 	mm.Unlock()
+
 }
 func (mm *MutexedMap[T]) Keys() (keys []string) {
 	mm.RLock()
@@ -57,6 +60,7 @@ func (mm *MutexedMap[T]) Delete(key string) (t T, ok bool) {
 	t, ok = mm.M[key]
 	if ok {
 		delete(mm.M, key)
+		mm.count.Add(-1)
 	}
 	mm.Unlock()
 	return
