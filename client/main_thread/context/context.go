@@ -39,6 +39,7 @@ func CreateNewContext() *ContextStruct {
 	return &ContextStruct{
 		created:    time.Now(),
 		MutexedMap: base.NewMutexedMap[any](),
+		cancel_c:   make(chan struct{}),
 	}
 }
 

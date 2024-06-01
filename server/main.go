@@ -1,17 +1,24 @@
 package main
 
 import (
-	"net/http"
+	"log"
 
-	"github.com/gin-gonic/gin"
+	ginserver "github.com/ftp_system_server/gin_server"
+	ftp_context "github.com/ftp_system_server/main_thread/context"
+	"github.com/joho/godotenv"
 )
 
+func init() {
+	err := godotenv.Load() // 👈 load .env file
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+
+	log.Println("server started")
+	ctx := ftp_context.CreateNewContext()
+	defer ctx.Wait()
+	ginserver.NewServer(ctx)
 }

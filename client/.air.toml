@@ -4,8 +4,8 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "tmp\\main.exe"
-  cmd = "go build -o ./tmp/main.exe ."
+  bin = "tmp\\ftp_client.exe"
+  cmd = "go build -o ./tmp/ftp_client.exe ."
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata","logs","data"]
   exclude_file = []
@@ -15,7 +15,7 @@ tmp_dir = "tmp"
   full_bin = ""
   include_dir = []
   include_ext = ["go", "tpl", "tmpl", "html"]
-  include_file = [".config.json"]
+  include_file = [".config.json",".env"]
   kill_delay = "0s"
   log = "build-errors.log"
   poll = false
