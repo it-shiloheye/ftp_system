@@ -1,16 +1,12 @@
 package mainthread
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"time"
 
-	"github.com/ftp_system_client/main_thread/actions"
-	netclient "github.com/ftp_system_client/main_thread/network_client"
+	"github.com/ftp_system_server/main_thread/actions"
 	configuration "github.com/it-shiloheye/ftp_system_lib/config"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler"
@@ -37,31 +33,6 @@ func MainThread(ctx ftp_context.Context) context.Context {
 
 	tick := time.Duration(config.UpdateRate) * time.Minute
 	tckr := time.NewTicker(tick)
-	client := netclient.NewNetworkClient(ctx)
-
-	tmp := map[string]any{}
-	o := ""
-	var err error = &ftp_context.LogItem{}
-	for ; err != nil; err = nil {
-		res, err := client.Get("https://127.0.0.1:8080/cert")
-		if err != nil {
-			log.Println(err)
-			<-time.After(time.Second * 10)
-			continue
-		}
-		b := bytes.NewBuffer(make([]byte, res.ContentLength+1))
-		io.Copy(b, res.Body)
-		o = b.String()
-
-		err = json.Unmarshal([]byte(o), &tmp)
-		if err != nil {
-			log.Println(err)
-			<-time.After(time.Second * 10)
-			continue
-		}
-	}
-	log.Println("\n", tmp, "\n", o)
-
 	for ok {
 
 		child_ctx := ctx.NewChild()

@@ -24,5 +24,6 @@ func Write_directory_files_list(dir_path string, files []filehandler.FileBasic) 
 	if err != nil {
 		return ftp_context.NewLogItem(loc, true).SetAfter("txt_file.Create().WriteJson(files)").AppendParentError(err)
 	}
+
 	return
 }

@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ftp_system_client/base"
 	"github.com/ftp_system_client/logging"
+	"github.com/it-shiloheye/ftp_system_lib/base"
 )
 
 type BytesStore struct {

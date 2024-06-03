@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/ftp_system_client/logging"
-	cfg "github.com/ftp_system_client/main_thread/config"
+	cfg "github.com/it-shiloheye/ftp_system_lib/config"
 )
 
 type FileType int

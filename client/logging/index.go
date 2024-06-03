@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ftp_system_client/base"
+	"github.com/it-shiloheye/ftp_system_lib/base"
 )
 
 const (

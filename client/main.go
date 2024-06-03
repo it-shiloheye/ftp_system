@@ -5,8 +5,8 @@ import (
 
 	mainthread "github.com/ftp_system_client/main_thread"
 
-	configuration "github.com/ftp_system_client/main_thread/config"
-	ftp_context "github.com/ftp_system_client/main_thread/context"
+	configuration "github.com/it-shiloheye/ftp_system_lib/config"
+	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 )
 
 var cfg = configuration.Config
