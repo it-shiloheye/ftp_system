@@ -29,6 +29,8 @@ github.com/go-playground/validator/v10 v10.21.0/go.mod h1:dbuPbCMFw/DrkbEynArYaC
 github.com/goccy/go-json v0.10.3 h1:KZ5WoDbxAIgm2HNbYckL0se1fHD6rz5j4ywS6ebzDqA=
 github.com/goccy/go-json v0.10.3/go.mod h1:oq7eo15ShAhp70Anwd5lgX2pLfOS3QCiwU/PULtXL6M=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/it-shiloheye/ftp_system_lib v0.0.0-20240601135736-8f0ed6d65337 h1:9XT6slq3Q9V8/8NtF6zuEi6o0yKqrgwXuvgyUPb2v0I=
 github.com/it-shiloheye/ftp_system_lib v0.0.0-20240601135736-8f0ed6d65337/go.mod h1:O90F31Rd3qNAPDWbaEprgY0z6uI+/3x4lk6XuR9/4Wk=
 github.com/it-shiloheye/ftp_system_lib v0.1.0 h1:fl5VV29SC2eyTilHrN6Zk0QggP4/cNzw/LWempAJfL4=
@@ -37,6 +39,8 @@ github.com/it-shiloheye/ftp_system_lib v0.3.0 h1:2BasjEdrMAMpyiroUJexjufhBYNnTbQ
 github.com/it-shiloheye/ftp_system_lib v0.3.0/go.mod h1:vDEilIXTcIDJhrMgIeeU7YMv7M710HMKoBrmMVswTa4=
 github.com/it-shiloheye/ftp_system_lib v0.3.4 h1:IObNomdQIg0q3P+FgNrVmuDzfPRmBu43IjEJVRMf8aU=
 github.com/it-shiloheye/ftp_system_lib v0.3.4/go.mod h1:vDEilIXTcIDJhrMgIeeU7YMv7M710HMKoBrmMVswTa4=
+github.com/it-shiloheye/ftp_system_lib v0.4.1 h1:pYXy8eLDkZWmCBf4BoONEOcdTirjmhbozn+TukT8woQ=
+github.com/it-shiloheye/ftp_system_lib v0.4.1/go.mod h1:VsMWpZiR4NeiPcA9KApENsMzklcwR5ZOPGdBC+ZTtWw=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=

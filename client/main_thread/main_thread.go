@@ -1,12 +1,11 @@
 package mainthread
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/ftp_system_client/main_thread/actions"
@@ -37,28 +36,22 @@ func MainThread(ctx ftp_context.Context) context.Context {
 
 	tick := time.Duration(config.UpdateRate) * time.Minute
 	tckr := time.NewTicker(tick)
-	client := netclient.NewNetworkClient(ctx)
-
+	client, err_ := netclient.NewNetworkClient(ctx)
+	if err_ != nil {
+		log.Fatalln(err_)
+	}
 	tmp := map[string]any{}
 	o := ""
 	var err error = &ftp_context.LogItem{}
 	for ; err != nil; err = nil {
-		res, err := client.Get("https://127.0.0.1:8080/cert")
+		res, err := MakeGetRequest(client, "https://127.0.0.1:8080/cert", tmp)
 		if err != nil {
 			log.Println(err)
 			<-time.After(time.Second * 10)
 			continue
 		}
-		b := bytes.NewBuffer(make([]byte, res.ContentLength+1))
-		io.Copy(b, res.Body)
-		o = b.String()
+		o = string(res)
 
-		err = json.Unmarshal([]byte(o), &tmp)
-		if err != nil {
-			log.Println(err)
-			<-time.After(time.Second * 10)
-			continue
-		}
 	}
 	log.Println("\n", tmp, "\n", o)
 
@@ -114,4 +107,30 @@ func MainThread(ctx ftp_context.Context) context.Context {
 	}
 
 	return ctx
+}
+
+func MakeGetRequest(client *http.Client, route string, tmp any) (out []byte, err ftp_context.LogErr) {
+	loc := "MakeRequest(method, route string, tmp any ) (out []byte, err ftp_context.LogErr)"
+	var eror error
+	log.Println(loc)
+	res, eror := client.Get(route)
+	if eror != nil {
+		log.Println(err)
+		return nil, ftp_context.NewLogItem(loc, true).
+			SetAfter("client.Get").
+			AppendParentError(eror)
+
+	}
+	out = make([]byte, res.ContentLength+1)
+	res.Body.Read(out)
+	eror = json.Unmarshal(out, tmp)
+	if eror != nil {
+		log.Println(err)
+		return nil, ftp_context.NewLogItem(loc, true).
+			SetAfter("client.Get").
+			AppendParentError(eror)
+
+	}
+
+	return
 }

@@ -2,7 +2,10 @@ module github.com/ftp_system_client
 
 go 1.22.2
 
-require github.com/it-shiloheye/ftp_system_lib v0.3.4
+require (
+	github.com/google/uuid v1.6.0
+	github.com/it-shiloheye/ftp_system_lib v0.4.1
+)
 
 require (
 	github.com/bytedance/sonic v1.11.8 // indirect

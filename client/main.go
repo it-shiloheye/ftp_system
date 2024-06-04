@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	initialiseclient "github.com/ftp_system_client/init_client"
 	mainthread "github.com/ftp_system_client/main_thread"
 
 	configuration "github.com/it-shiloheye/ftp_system_lib/config"
@@ -10,6 +11,7 @@ import (
 )
 
 var cfg = configuration.Config
+var ClientConfig = initialiseclient.ClientConfig
 
 func main() {
 	log.Println("new", cfg.Identity, "started: ", cfg.Id)

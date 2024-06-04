@@ -3,26 +3,33 @@ package ginserver
 import (
 	"log"
 	"net"
+	"net/http"
+	"os"
 
+	"github.com/ftp_system_server/main_thread/actions"
 	"github.com/gin-gonic/gin"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
-	ftp_tlshandler "github.com/it-shiloheye/ftp_system_lib/tls_handler"
+	ftp_tlshandler "github.com/it-shiloheye/ftp_system_lib/tls_handler/v2"
 )
 
 func NewServer(ctx ftp_context.Context) (ftp_err ftp_context.LogErr) {
-
-	cert_d = ftp_tlshandler.NewCA(cert_d.CertData)
-	cad := cert_d.NewCAJson()
-	_, err_ := cad.ToJSON()
-	if err_ != nil {
-		log.Fatalln(err_)
+	x509_ca_cert := ftp_tlshandler.ExampleCACert(*cert_d)
+	ca_pem, err1 := ftp_tlshandler.GenerateCAPem(x509_ca_cert)
+	if err1 != nil {
+		log.Fatalln(err1.Error())
 	}
-	// log.Fatalln(d)
-	server_cert := cert_d.NewServerCert(cert_d.CertData)
+
+	err2 := actions.WriteJson("./data", "ca_cert", &ca_pem)
+	if err2 != nil {
+		log.Fatalln(err2)
+	}
+	x509_tls_cert := ftp_tlshandler.ExampleTLSCert(*cert_d)
+	server_cert, err3 := ftp_tlshandler.GenerateTLSCert(ca_pem, x509_tls_cert)
+	if err3 != nil {
+		log.Fatalln(err3.Error())
+	}
 	select {
-	case ftp_err = <-gin_server_http_thread(ctx, cad.PEM):
-		break
-	case ftp_err = <-gin_server_main_thread(ctx, server_cert, cad.PEM):
+	case ftp_err = <-gin_server_main_thread(ctx, &server_cert):
 		break
 	case <-ctx.Done():
 	}
@@ -30,63 +37,27 @@ func NewServer(ctx ftp_context.Context) (ftp_err ftp_context.LogErr) {
 	return
 }
 
-var cert_d *ftp_tlshandler.CertSetup
+var cert_d *ftp_tlshandler.CertData
 
 func init() {
-	cert_d = &ftp_tlshandler.CertSetup{
-		CertData: &ftp_tlshandler.CertData{
-			Organization:  "Shiloh Eye, Ltd",
-			Country:       "KE",
-			Province:      "Coast",
-			Locality:      "Mombasa",
-			StreetAddress: "2nd Floor, SBM Bank Centre, Nyerere Avenue, Mombasa",
-			PostalCode:    "80100",
-			NotAfter: ftp_tlshandler.NotAfterStruct{
-				Days: 7,
-			},
-			IPAddrresses: []net.IP{
-				net.IPv4(127, 0, 0, 1),
-				net.IPv6loopback,
-			},
-		}}
-
+	cert_d = &ftp_tlshandler.CertData{
+		Organization:  "Shiloh Eye, Ltd",
+		Country:       "KE",
+		Province:      "Coast",
+		Locality:      "Mombasa",
+		StreetAddress: "2nd Floor, SBM Bank Centre, Nyerere Avenue, Mombasa",
+		PostalCode:    "80100",
+		NotAfter: ftp_tlshandler.NotAfterStruct{
+			Days: 7,
+		},
+		IPAddrresses: []net.IP{
+			net.IPv4(127, 0, 0, 1),
+			net.IPv6loopback,
+		},
+	}
 }
 
-func gin_server_http_thread(ctx ftp_context.Context, caPEM string) <-chan ftp_context.LogErr {
-	loc := "func gin_server_http_thread(ctx ftp_context.Context, caPEM string) (err ftp_context.LogErr)"
-
-	err_c := make(chan ftp_context.LogErr, 1)
-
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-
-	r.GET("/cert", func(ctx *gin.Context) {
-
-		ctx.JSON(200, gin.H{
-			"ca_pem": caPEM,
-			"error":  "",
-		})
-	})
-	ctx.Add()
-	go func() {
-		defer ctx.Finished()
-		log.Println("Starting: gin_server_http_thread")
-		if err_ := r.Run(":3000"); err_ != nil {
-			err_c <- ftp_context.NewLogItem(loc, true).
-				SetAfter(`r.Run()`).
-				SetMessage("server failed").
-				AppendParentError(err_)
-		}
-		close(err_c)
-	}()
-	return err_c
-}
-
-func gin_server_main_thread(ctx ftp_context.Context, server_cert *ftp_tlshandler.CertSetup, caPEM string) <-chan ftp_context.LogErr {
+func gin_server_main_thread(ctx ftp_context.Context, server_cert *ftp_tlshandler.TLSCert) <-chan ftp_context.LogErr {
 	loc := "gin_server_main_thread(ctx ftp_context.Context) (err ftp_context.LogErr)"
 
 	err_c := make(chan ftp_context.LogErr, 1)
@@ -98,21 +69,22 @@ func gin_server_main_thread(ctx ftp_context.Context, server_cert *ftp_tlshandler
 		})
 	})
 
-	r.GET("/cert", func(ctx *gin.Context) {
-
-		ctx.JSON(200, gin.H{
-			"ca_pem": caPEM,
-			"error":  "",
-		})
-	})
-
 	ctx.Add()
 	go func() {
 		defer ctx.Finished()
 		log.Println("Starting: gin_server_main_thread")
-		if err_ := ftp_tlshandler.GinHandler(r, server_cert, ":8080"); err_ != nil {
+
+		srv := http.Server{
+			Addr:      ":" + os.Getenv("PORT"),
+			Handler:   r,
+			TLSConfig: ftp_tlshandler.ServerTLSConf(server_cert.TlsCert),
+		}
+
+		log.Println("https://127.0.0.1", srv.Addr)
+
+		if err_ := srv.ListenAndServeTLS("", ""); err_ != nil {
 			err_c <- ftp_context.NewLogItem(loc, true).
-				SetAfter(`ftp_tlshandler.GinHandler(r, server_cert, "8081")`).
+				SetAfter(`srv.ListenAndServeTLS("","")`).
 				SetMessage("server failed").
 				AppendParentError(err_)
 		}
