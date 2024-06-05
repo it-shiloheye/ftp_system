@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ftp_system_client/logging"
+	"github.com/it-shiloheye/ftp_system/client/logging"
 	"github.com/it-shiloheye/ftp_system_lib/base"
 )
 

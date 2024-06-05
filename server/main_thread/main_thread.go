@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ftp_system_server/main_thread/actions"
+	"github.com/it-shiloheye/ftp_system/server/main_thread/actions"
 	configuration "github.com/it-shiloheye/ftp_system_lib/config"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler"

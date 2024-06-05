@@ -3,6 +3,7 @@
 **/data
 **/tmp
 *.json
+!*.schema.json
 ftp_system
 */tmp*
 /.git

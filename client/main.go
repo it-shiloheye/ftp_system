@@ -2,21 +2,40 @@ package main
 
 import (
 	"log"
+	"time"
 
-	initialiseclient "github.com/ftp_system_client/init_client"
-	mainthread "github.com/ftp_system_client/main_thread"
+	initialiseclient "github.com/it-shiloheye/ftp_system/client/init_client"
+	mainthread "github.com/it-shiloheye/ftp_system/client/main_thread"
 
-	configuration "github.com/it-shiloheye/ftp_system_lib/config"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 )
 
-var cfg = configuration.Config
 var ClientConfig = initialiseclient.ClientConfig
 
 func main() {
-	log.Println("new", cfg.Identity, "started: ", cfg.Id)
+
+	log.Println("new client started: ", ClientConfig.Id)
 	ctx := ftp_context.CreateNewContext()
-	ctx.Set("config", cfg)
+	defer ctx.Wait()
+	ctx.Add()
+	go UpdateConfig(ctx)
 	mainthread.MainThread(ctx.Add())
 
+}
+
+func UpdateConfig(ctx ftp_context.Context) {
+	defer ctx.Finished()
+	tc := time.NewTicker(time.Minute)
+	for ok := true; ok; {
+		select {
+		case <-tc.C:
+		case _, ok = <-ctx.Done():
+		}
+
+		err := initialiseclient.WriteConfig()
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println("updated config successfully")
+	}
 }

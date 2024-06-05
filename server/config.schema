@@ -1,0 +1,18 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": ".",
+    "local_ip": "string",
+    "web_ip": "string",
+    "ca_location": "string",
+    "storage_dir": "string",
+    "tmp_directory": "",
+    "remote_git_repo": "",
+    "clients": [
+        {
+            "ip_address": "string",
+            "id": "string",
+            "common_name": "string",
+            "directories": ["string"]
+        }
+    ]
+}

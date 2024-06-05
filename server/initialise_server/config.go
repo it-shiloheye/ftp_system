@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -15,15 +16,16 @@ import (
 var ServerConfig = &ServerConfigStruct{}
 
 type ServerConfigStruct struct {
-	Schema           string           `json:"$schema"`
-	SchemaId         string           `json:"$id"`
-	LocalIp          string           `json:"local_ip"`
-	WebIp            string           `json:"web_ip"`
-	CA_Location      string           `json:"ca_location"`
-	StorageDirectory string           `json:"storage_dir"`
-	TmpDirectory     string           `json:"tmp_directory"`
-	RemoteRepository string           `json:"remote_git_repo"`
-	Clients          []ClientIDStruct `json:"clients"`
+	Schema            string           `json:"$schema"`
+	SchemaId          string           `json:"$id"`
+	LocalIp           string           `json:"local_ip"`
+	WebIp             string           `json:"web_ip"`
+	CertsDirectory    string           `json:"certs_dir"`
+	StorageDirectory  string           `json:"storage_dir"`
+	TmpDirectory      string           `json:"tmp_directory"`
+	RemoteRepository  string           `json:"remote_git_repo"`
+	Clients           []ClientIDStruct `json:"clients"`
+	TLS_Cert_Creation time.Time        `json:"tls_cert_creation"`
 }
 
 type ClientIDStruct struct {

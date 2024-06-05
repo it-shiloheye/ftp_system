@@ -2,61 +2,52 @@ package mainthread
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 
-	"github.com/ftp_system_client/main_thread/actions"
-	netclient "github.com/ftp_system_client/main_thread/network_client"
-	configuration "github.com/it-shiloheye/ftp_system_lib/config"
+	initialiseclient "github.com/it-shiloheye/ftp_system/client/init_client"
+	"github.com/it-shiloheye/ftp_system/client/main_thread/actions"
+	netclient "github.com/it-shiloheye/ftp_system/client/main_thread/network_client"
+
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler"
 	githandler "github.com/it-shiloheye/ftp_system_lib/git_handler"
 )
 
+var ClientConfig = initialiseclient.ClientConfig
+
 func MainThread(ctx ftp_context.Context) context.Context {
 	defer ctx.Wait()
-	cfg, ok := ctx.Get("config")
-	if !ok {
-		log.Fatalln("no config provided")
-	}
-	config, ok := cfg.(*configuration.ConfigStruct)
-	if !ok {
-		log.Fatalln("invalid config type")
-	}
 
-	if len(config.Include) < 1 {
+	if len(ClientConfig.IncludeDir) < 1 {
 		log.Fatalln("add at least one file to include list")
 	}
 
 	gte := githandler.GitEngine{}
 	gte.Init(ctx.NewChild())
 
-	tick := time.Duration(config.UpdateRate) * time.Minute
+	tick := time.Duration(ClientConfig.UpdateRate) * time.Minute
 	tckr := time.NewTicker(tick)
 	client, err_ := netclient.NewNetworkClient(ctx)
 	if err_ != nil {
 		log.Fatalln(err_)
 	}
 	tmp := map[string]any{}
-	o := ""
-	var err error = &ftp_context.LogItem{}
-	for ; err != nil; err = nil {
-		res, err := MakeGetRequest(client, "https://127.0.0.1:8080/cert", tmp)
-		if err != nil {
-			log.Println(err)
-			<-time.After(time.Second * 10)
-			continue
-		}
-		o = string(res)
 
+	o, err1 := netclient.MakeGetRequest(client, netclient.Route{
+		BaseUrl:  "https://127.0.0.1:8080",
+		Pathname: "/ping",
+	}, &tmp)
+	if err1 != nil {
+		log.Fatalln(err1.Error())
 	}
+
 	log.Println("\n", tmp, "\n", o)
 
-	for ok {
+	for ok := true; ok; {
 
+		log.Println("in loop")
 		child_ctx := ctx.NewChild()
 		child_ctx.SetDeadline(tick)
 		log.Println("starting git cycle")
@@ -76,9 +67,9 @@ func MainThread(ctx ftp_context.Context) context.Context {
 		*	5. Transmit over network any new changes where necessary
 		 */
 
-		for _, directory := range config.Include {
+		for _, directory := range ClientConfig.IncludeDir {
 			log.Println("loading ", directory)
-			ls, err := filehandler.ReadDir(child_ctx, directory, append(config.Exclude, ".git"))
+			ls, err := filehandler.ReadDir(child_ctx, directory, append(append(ClientConfig.ExcludeDirs, ".git"), ClientConfig.ExcluedFile...))
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
@@ -107,30 +98,4 @@ func MainThread(ctx ftp_context.Context) context.Context {
 	}
 
 	return ctx
-}
-
-func MakeGetRequest(client *http.Client, route string, tmp any) (out []byte, err ftp_context.LogErr) {
-	loc := "MakeRequest(method, route string, tmp any ) (out []byte, err ftp_context.LogErr)"
-	var eror error
-	log.Println(loc)
-	res, eror := client.Get(route)
-	if eror != nil {
-		log.Println(err)
-		return nil, ftp_context.NewLogItem(loc, true).
-			SetAfter("client.Get").
-			AppendParentError(eror)
-
-	}
-	out = make([]byte, res.ContentLength+1)
-	res.Body.Read(out)
-	eror = json.Unmarshal(out, tmp)
-	if eror != nil {
-		log.Println(err)
-		return nil, ftp_context.NewLogItem(loc, true).
-			SetAfter("client.Get").
-			AppendParentError(eror)
-
-	}
-
-	return
 }
