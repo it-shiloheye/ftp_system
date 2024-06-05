@@ -1,4 +1,4 @@
-module github.com/ftp_system_server
+module github.com/it-shiloheye/ftp_system/server
 
 go 1.22.2
 
