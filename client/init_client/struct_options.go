@@ -1,6 +1,7 @@
 package initialiseclient
 
 import (
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,7 +28,7 @@ type ClientConfigStruct struct {
 	// ips of servers to subscribe and connect to
 	ServerIps []string `json:"server_ips"`
 	// local directory to store logs
-	LogDir string `json:"log_dir"`
+	DataDir string `json:"data_dir"`
 	// crash if error, or continue in error state
 	StopOnError bool `json:"stop_on_error"`
 }
@@ -42,7 +43,8 @@ type DirConfig struct {
 	IncludeDir    []string      `json:"include_dir"`
 	IncludeExt    []string      `json:"include_ext"`
 	IncludeFile   []string      `json:"include_file"`
-	UpdateRate    time.Duration `json:"update_rate_seconds"`
+	UpdateRate    time.Duration `json:"update_rate_minutes"`
+	PathSeparator string        `json:"path_separator"`
 }
 
 type SubscribeDirsStruct struct {
@@ -108,13 +110,15 @@ func BlankClientConfigStruct() ClientConfigStruct {
 			IncludeDir:    []string{},
 			IncludeExt:    []string{},
 			IncludeFile:   []string{},
+			UpdateRate:    time.Minute,
+			PathSeparator: string(os.PathSeparator),
 		},
 		// download instructions of current client
 		SubscribeDirs: []SubscribeDirsStruct{BlankSubscribeDirsStruct()},
 		// ips of servers to subscribe and connect to
 		ServerIps: []string{},
 		// local directory to store logs
-		LogDir: "./logs",
+		DataDir: "./data",
 		// crash if error, or continue in error state
 		StopOnError: true,
 	}

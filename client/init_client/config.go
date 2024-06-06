@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"log"
+	"time"
 
 	"os"
 
@@ -43,39 +44,40 @@ func ReadConfig(file_path string) (sc ClientConfigStruct, err error) {
 }
 
 func init() {
-
+	log.Println("loading config")
 	*ClientConfig = BlankClientConfigStruct()
 
-	b, err := os.ReadFile("./config.json")
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+	b, err1 := os.ReadFile("./config.json")
+	if err1 != nil {
+		if errors.Is(err1, os.ErrNotExist) {
 
-			tmp, err1 := json.MarshalIndent(ClientConfig, " ", "\t")
-			if err1 != nil {
-				log.Fatalln(err1)
-			}
-			err2 := os.WriteFile("./config.json", tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
+			tmp, err2 := json.MarshalIndent(ClientConfig, " ", "\t")
 			if err2 != nil {
-				log.Fatalln(err2)
+				log.Fatalln(err2.Error())
+			}
+			err3 := os.WriteFile("./config.json", tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
+			if err3 != nil {
+				log.Fatalln(err3.Error())
 			}
 			log.Fatalln("fill in config")
 			return
 		}
-		log.Fatalln(err)
+		log.Fatalln(err1.Error())
 	}
 
 	err3 := json.Unmarshal(b, ClientConfig)
 	if err3 != nil {
-		log.Fatalln(err)
+		log.Fatalln(err3.Error())
 	}
+
+	log.Println("successfull loaded config")
 }
 
 func WriteConfig() (err ftp_context.LogErr) {
 	loc := "WriteConfig() (err ftp_context.LogErr)"
 	tmp, err1 := json.MarshalIndent(ClientConfig, " ", "\t")
 	if err1 != nil {
-		return &ftp_context.LogItem{
-			Location:  loc,
+		return &ftp_context.LogItem{Location: loc, Time: time.Now(),
 			Err:       true,
 			After:     `tmp, err1 := json.MarshalIndent(ClientConfig, " ", "\t")`,
 			Message:   err1.Error(),
@@ -84,8 +86,7 @@ func WriteConfig() (err ftp_context.LogErr) {
 	}
 	err2 := os.WriteFile("./config.json", tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
 	if err2 != nil {
-		return &ftp_context.LogItem{
-			Location:  loc,
+		return &ftp_context.LogItem{Location: loc, Time: time.Now(),
 			Err:       true,
 			After:     `err2 := os.WriteFile("./config.json", tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))`,
 			Message:   err2.Error(),

@@ -2,55 +2,69 @@ package mainthread
 
 import (
 	"context"
-	"fmt"
+	"net/http"
+	"strings"
+
 	"log"
 	"time"
 
 	initialiseclient "github.com/it-shiloheye/ftp_system/client/init_client"
-	"github.com/it-shiloheye/ftp_system/client/main_thread/actions"
+	// "github.com/it-shiloheye/ftp_system/client/main_thread/actions"
+	dir_handler "github.com/it-shiloheye/ftp_system/client/main_thread/filehandler"
 	netclient "github.com/it-shiloheye/ftp_system/client/main_thread/network_client"
 
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
-	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler"
-	githandler "github.com/it-shiloheye/ftp_system_lib/git_handler"
+	// filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 )
 
 var ClientConfig = initialiseclient.ClientConfig
 
+func ticker(loc string, i int) {
+
+	log.Println(loc, i)
+}
+
 func MainThread(ctx ftp_context.Context) context.Context {
+	loc := "MainThread(ctx ftp_context.Context) context.Context "
+
+	ticker(loc, 1)
 	defer ctx.Wait()
 
 	if len(ClientConfig.IncludeDir) < 1 {
-		log.Fatalln("add at least one file to include list")
+		if len(ClientConfig.DirConfig.Path) > 0 {
+			ClientConfig.IncludeDir = append(ClientConfig.IncludeDir, ClientConfig.DirConfig.Path)
+		} else {
+			log.Fatalln("add at least one file to include list or directory path")
+		}
 	}
 
-	gte := githandler.GitEngine{}
-	gte.Init(ctx.NewChild())
+	if ClientConfig.UpdateRate < 1 {
+		ClientConfig.UpdateRate = time.Minute * 5
+	} else {
+		ClientConfig.UpdateRate = time.Duration(ClientConfig.UpdateRate)
+	}
 
-	tick := time.Duration(ClientConfig.UpdateRate) * time.Minute
-	tckr := time.NewTicker(tick)
+	tick := ClientConfig.UpdateRate
+	tckr := time.NewTicker(ClientConfig.UpdateRate)
+
 	client, err_ := netclient.NewNetworkClient(ctx)
 	if err_ != nil {
 		log.Fatalln(err_)
 	}
-	tmp := map[string]any{}
-
-	o, err1 := netclient.MakeGetRequest(client, netclient.Route{
-		BaseUrl:  "https://127.0.0.1:8080",
-		Pathname: "/ping",
-	}, &tmp)
-	if err1 != nil {
-		log.Fatalln(err1.Error())
+	base_server := "https://127.0.0.1:8080"
+	tyc := &TestServerConnection{
+		tmp: map[string]string{},
+		tc:  time.NewTicker(time.Second * 5),
 	}
 
-	log.Println("\n", tmp, "\n", o)
+	test_server_connection(client, base_server, tyc)
 
+	go UpdateFileTree(ctx.Add())
 	for ok := true; ok; {
 
-		log.Println("in loop")
 		child_ctx := ctx.NewChild()
 		child_ctx.SetDeadline(tick)
-		log.Println("starting git cycle")
+		log.Println("starting client cycle")
 		/**
 		* five tasks:
 		*	1. Read all files in directory
@@ -67,35 +81,75 @@ func MainThread(ctx ftp_context.Context) context.Context {
 		*	5. Transmit over network any new changes where necessary
 		 */
 
-		for _, directory := range ClientConfig.IncludeDir {
-			log.Println("loading ", directory)
-			ls, err := filehandler.ReadDir(child_ctx, directory, append(append(ClientConfig.ExcludeDirs, ".git"), ClientConfig.ExcluedFile...))
-			if err != nil {
-				log.Fatalln(err.Error())
+		rd, err1 := dir_handler.ReadDir(child_ctx.Add(), ClientConfig.DirConfig)
+		ticker(loc, 2)
+		if err1 != nil {
+			log.Println("error occured, shutdown: ", ClientConfig.StopOnError)
+			if ClientConfig.StopOnError {
+				log.Fatalln(err1.Error())
 			}
-			for _, f := range ls[:5] {
-				fmt.Println(f.Path, " found")
-			}
-			act_err := actions.Write_directory_files_list(directory, ls)
-			if act_err != nil {
-				log.Fatalln(act_err)
-			}
-
-			err = gte.Commit(directory)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			log.Println(err1.Error())
+			_, ok = <-tckr.C
+			continue
 		}
+
+		ticker(loc, 3)
+		log.Println("to rehash:\n", strings.Join(rd.ToRehash, "\n"))
+		log.Println("to upload:\n", strings.Join(rd.ToUpload, "\n"))
+
 		// child_ctx.Cancel()
 		select {
 		case _, ok = <-ctx.Done():
 
 		case <-child_ctx.Done():
-
-		case _, ok = <-tckr.C:
 			log.Println("new tick")
+
 		}
 	}
 
 	return ctx
+}
+
+type TestServerConnection struct {
+	tmp   map[string]string
+	tc    *time.Ticker
+	count int
+}
+
+func test_server_connection(client *http.Client, host string, tsc *TestServerConnection) {
+	log.Println("test_server_connection")
+	rc := netclient.Route{
+		BaseUrl:  host,
+		Pathname: "/ping",
+	}
+	_, err1 := netclient.MakeGetRequest(client, rc, &tsc.tmp)
+	if err1 != nil {
+		log.Println("error here")
+		tsc.count += 1
+		if tsc.count < 5 {
+			log.Println(err1.Error())
+		} else {
+			log.Fatalln(err1.Error())
+		}
+		<-tsc.tc.C
+		test_server_connection(client, host, tsc)
+	}
+
+	log.Println("server connected successfully:", host)
+}
+func UpdateFileTree(ctx ftp_context.Context) {
+	defer ctx.Finished()
+	tc := time.NewTicker(time.Minute)
+	for ok := true; ok; {
+		select {
+		case <-tc.C:
+		case _, ok = <-ctx.Done():
+		}
+
+		err := dir_handler.WriteFileTree(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println("updated filetree successfully")
+	}
 }

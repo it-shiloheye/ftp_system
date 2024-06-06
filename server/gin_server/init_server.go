@@ -83,8 +83,7 @@ func init() {
 	ca_buf, err1 := os.ReadFile(certs_loc.CA())
 	if err1 != nil {
 		if !errors.Is(err1, os.ErrNotExist) {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     "ca_buf, err1 := os.ReadFile(certs_loc.CA())",
 				Message:   err1.Error(),
@@ -94,8 +93,7 @@ func init() {
 
 		err2 := os.MkdirAll(certs_loc.CertsDirectory, f_mode)
 		if err2 != nil && !errors.Is(err2, os.ErrExist) {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     "err2 := os.MkdirAll(certs_loc.CertsDirectory, f_mode)",
 				Message:   err2.Error(),
@@ -106,8 +104,7 @@ func init() {
 		cd_buf, err3 := os.ReadFile(certs_loc.CertData())
 		if err3 != nil {
 			if !errors.Is(err3, os.ErrNotExist) {
-				log.Fatalln(&ftp_context.LogItem{
-					Location:  loc,
+				log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 					Err:       true,
 					After:     "cd_buf, err3 := os.ReadFile(certs_loc.CertData())",
 					Message:   err3.Error(),
@@ -117,8 +114,7 @@ func init() {
 
 			cd_buf, err4 := json.MarshalIndent(&template_cd, " ", "\t")
 			if err4 != nil {
-				log.Fatalln(&ftp_context.LogItem{
-					Location:  loc,
+				log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 					Err:       true,
 					After:     `cd_buf, err4 := json.MarshalIndent(&template_cd," ","\t")`,
 					Message:   err4.Error(),
@@ -127,8 +123,7 @@ func init() {
 			}
 			err5 := os.WriteFile(certs_loc.CertData(), cd_buf, f_mode)
 			if err5 != nil {
-				log.Fatalln(&ftp_context.LogItem{
-					Location:  loc,
+				log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 					Err:       true,
 					After:     `err5 := os.WriteFile(certs_loc.CertData(),cd_buf,f_mode)`,
 					Message:   err5.Error(),
@@ -141,8 +136,7 @@ func init() {
 
 		err4 := json.Unmarshal(cd_buf, &certs_loc.cert_d)
 		if err4 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `err4 := json.Unmarshal(cd_buf,&certs_loc.cert_d)`,
 				Message:   err4.Error(),
@@ -154,8 +148,7 @@ func init() {
 
 		tmp, err5 := ftp_tlshandler.GenerateCAPem(tmp_x509)
 		if err5 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `tmp, err5 := ftp_tlshandler.GenerateCAPem(tmp_x509)`,
 				Message:   err5.Error(),
@@ -167,8 +160,7 @@ func init() {
 
 		ca_buf_, err6 := json.MarshalIndent(&tmp, " ", "\t")
 		if err6 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `ca_buf_, err6 := json.MarshalIndent(&tmp," ","\t")`,
 				Message:   err6.Error(),
@@ -179,8 +171,7 @@ func init() {
 
 		err7 := ftp_base.WriteFile(certs_loc.CA(), ca_buf)
 		if err7 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `err7 := ftp_base.WriteFile(certs_loc.CA(),ca_buf)`,
 				Message:   err7.Error(),
@@ -191,8 +182,7 @@ func init() {
 		// I expect to have a ca_buf with the caPEM data in bytes
 		err2 := json.Unmarshal(ca_buf, certs_loc.caPem)
 		if err2 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `err2 := json.Unmarshal(ca_buf, certs_loc.caPem)`,
 				Message:   err2.Error(),
@@ -213,8 +203,7 @@ func init() {
 	tls_buf, err2 := os.ReadFile(certs_loc.TLS())
 	if err2 != nil {
 		if !errors.Is(err2, os.ErrNotExist) {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     "tls_buf, err2 := os.ReadFile(certs_loc.TLS()))",
 				Message:   err2.Error(),
@@ -224,8 +213,7 @@ func init() {
 		x509_tls_cert := ftp_tlshandler.ExampleTLSCert(template_cd)
 		tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem, x509_tls_cert)
 		if err3 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     "tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem,x509_tls_cert)",
 				Message:   err3.Error(),
@@ -236,8 +224,7 @@ func init() {
 
 		tls_buf_, err4 := json.MarshalIndent(certs_loc.tlsCert, " ", "\t")
 		if err4 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `tls_buf_, err4 := json.MarshalIndent(certs_loc.tlsCert," ","\t")`,
 				Message:   err4.Error(),
@@ -247,8 +234,7 @@ func init() {
 
 		err5 := os.WriteFile(certs_loc.TLS(), tls_buf_, f_mode)
 		if err5 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `err5 := os.WriteFile(certs_loc.TLS(),tls_buf_,f_mode)`,
 				Message:   err5.Error(),
@@ -259,8 +245,7 @@ func init() {
 		// I expect to have a tls_buf with the tls_cert data in bytes
 		err3 := json.Unmarshal(tls_buf, certs_loc.tlsCert)
 		if err3 != nil {
-			log.Fatalln(&ftp_context.LogItem{
-				Location:  loc,
+			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
 				Err:       true,
 				After:     `err3 := json.Unmarshal(ca_buf, certs_loc.tlsCert)`,
 				Message:   err3.Error(),

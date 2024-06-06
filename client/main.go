@@ -6,19 +6,25 @@ import (
 
 	initialiseclient "github.com/it-shiloheye/ftp_system/client/init_client"
 	mainthread "github.com/it-shiloheye/ftp_system/client/main_thread"
+	"github.com/it-shiloheye/ftp_system/client/main_thread/logging"
 
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 )
 
 var ClientConfig = initialiseclient.ClientConfig
 
+var logger = logging.Logger
+
 func main() {
+	if ClientConfig == nil {
+		log.Fatalln("no client config")
+	}
 
 	log.Println("new client started: ", ClientConfig.Id)
 	ctx := ftp_context.CreateNewContext()
 	defer ctx.Wait()
-	ctx.Add()
-	go UpdateConfig(ctx)
+
+	go UpdateConfig(ctx.Add())
 	mainthread.MainThread(ctx.Add())
 
 }

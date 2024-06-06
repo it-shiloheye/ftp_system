@@ -2,6 +2,7 @@ package netclient
 
 import (
 	"encoding/json"
+	"log"
 
 	"net/http"
 	"os"
@@ -23,7 +24,7 @@ func (r *Route) Url() string {
 }
 
 func MakeGetRequest(client *http.Client, route Route, tmp any) (out []byte, err ftp_context.LogErr) {
-
+	log.Println("make get request")
 	_, out, err = make_get_request(client, route.Url(), tmp)
 	return
 }
@@ -31,6 +32,7 @@ func MakeGetRequest(client *http.Client, route Route, tmp any) (out []byte, err 
 func NewNetworkClient(ctx ftp_context.Context) (cl *http.Client, err ftp_context.LogErr) {
 	loc := "NewNetworkClient(ctx ftp_context.Context)(cl *http.Client, err ftp_context.LogErr )"
 	cl = &http.Client{}
+
 	tmp, err1 := os.ReadFile("./data/certs/ca_certs.json")
 	if err1 != nil {
 		err = ftp_context.NewLogItem(loc, true).SetAfterf("tmp, err1 := os.ReadFile(%s)", "./certs/ca_certs.json").SetMessage(err1.Error()).AppendParentError(err1)
