@@ -3,7 +3,6 @@ package dir_handler
 import (
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 
 	"path/filepath"
@@ -12,12 +11,14 @@ import (
 	"time"
 
 	initialiseclient "github.com/it-shiloheye/ftp_system/client/init_client"
+	"github.com/it-shiloheye/ftp_system/client/main_thread/logging"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 	// filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 )
 
 var ClientConfig = initialiseclient.ClientConfig
+var Logger = logging.Logger
 
 type ReadDirResult struct {
 	FilesList []*filehandler.FileBasic
@@ -27,7 +28,7 @@ type ReadDirResult struct {
 
 func ticker(loc string, i int) {
 
-	// log.Println(loc, i)
+	// Logger.Logf(loc,"%s", i)
 }
 
 func ReadDir(ctx ftp_context.Context, dir_data initialiseclient.DirConfig) (rd ReadDirResult, err ftp_context.LogErr) {
@@ -58,7 +59,7 @@ func ReadDir(ctx ftp_context.Context, dir_data initialiseclient.DirConfig) (rd R
 		dir_uniq[b] = true
 	}
 	ticker(loc, 3)
-	// log.Println("dir data path", dir_data.Path, "\n", strings.Join(dirs_list, "\n"))
+
 	var err1 error
 	rd.FilesList, err1 = list_file_tree(dir_data.Path, dirs_excluded_dirs_list)
 	if err1 != nil {
@@ -76,7 +77,7 @@ func ReadDir(ctx ftp_context.Context, dir_data initialiseclient.DirConfig) (rd R
 	ticker(loc, 4)
 	for _, file := range rd.FilesList {
 		f_path := file.Path
-		log.Println(f_path)
+		Logger.Logf(loc, f_path)
 		if file.IsDir() {
 			continue
 		}
@@ -110,7 +111,7 @@ func ReadDir(ctx ftp_context.Context, dir_data initialiseclient.DirConfig) (rd R
 	}
 
 	ticker(loc, 6)
-	log.Println("successfully read dir at ", time.Now().Format(time.RFC822))
+	Logger.Logf(loc, "successfully read dir at %s", time.Now().Format(time.RFC822))
 	return
 }
 
@@ -159,7 +160,7 @@ func list_file_tree(dir_path string, exclude_paths []string) (out []*filehandler
 
 		for _, excluded := range exclude_paths {
 			if strings.Contains(path, excluded) {
-				log.Println("excluded:", excluded, path)
+				Logger.Logf(loc, "excluded: %s %s", excluded, path)
 				return nil
 			}
 
@@ -176,9 +177,8 @@ func list_file_tree(dir_path string, exclude_paths []string) (out []*filehandler
 				CallStack: []error{err3},
 			}
 		}
-		log.Println("appended:", path)
+		Logger.Logf(loc, "appended: %s", path)
 		out = append(out, tmp)
-
 		return nil
 	})
 

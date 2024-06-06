@@ -2,7 +2,6 @@ package netclient
 
 import (
 	"encoding/json"
-	"log"
 
 	"net/http"
 	"os"
@@ -24,7 +23,8 @@ func (r *Route) Url() string {
 }
 
 func MakeGetRequest(client *http.Client, route Route, tmp any) (out []byte, err ftp_context.LogErr) {
-	log.Println("make get request")
+	loc := "MakeGetRequest(client *http.Client, route Route, tmp any) (out []byte, err ftp_context.LogErr)"
+	Logger.Logf(loc, "make get request")
 	_, out, err = make_get_request(client, route.Url(), tmp)
 	return
 }

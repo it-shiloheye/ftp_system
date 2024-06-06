@@ -13,23 +13,26 @@ import (
 
 var ClientConfig = initialiseclient.ClientConfig
 
-var logger = logging.Logger
+var Logger = logging.Logger
 
 func main() {
+	loc := "main"
 	if ClientConfig == nil {
 		log.Fatalln("no client config")
 	}
 
-	log.Println("new client started: ", ClientConfig.Id)
+	Logger.Logf(loc, "new client started: %s", ClientConfig.Id)
 	ctx := ftp_context.CreateNewContext()
 	defer ctx.Wait()
 
+	go Logger.Engine(ctx.Add())
 	go UpdateConfig(ctx.Add())
 	mainthread.MainThread(ctx.Add())
 
 }
 
 func UpdateConfig(ctx ftp_context.Context) {
+	loc := "UpdateConfig(ctx ftp_context.Context)"
 	defer ctx.Finished()
 	tc := time.NewTicker(time.Minute)
 	for ok := true; ok; {
@@ -40,8 +43,8 @@ func UpdateConfig(ctx ftp_context.Context) {
 
 		err := initialiseclient.WriteConfig()
 		if err != nil {
-			log.Println(err)
+			Logger.LogErr(loc, err)
 		}
-		log.Println("updated config successfully")
+		Logger.Logf(loc, "updated config successfully")
 	}
 }

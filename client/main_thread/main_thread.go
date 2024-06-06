@@ -3,6 +3,7 @@ package mainthread
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 
 	"log"
@@ -11,6 +12,7 @@ import (
 	initialiseclient "github.com/it-shiloheye/ftp_system/client/init_client"
 	// "github.com/it-shiloheye/ftp_system/client/main_thread/actions"
 	dir_handler "github.com/it-shiloheye/ftp_system/client/main_thread/filehandler"
+	"github.com/it-shiloheye/ftp_system/client/main_thread/logging"
 	netclient "github.com/it-shiloheye/ftp_system/client/main_thread/network_client"
 
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
@@ -18,10 +20,11 @@ import (
 )
 
 var ClientConfig = initialiseclient.ClientConfig
+var Logger = logging.Logger
 
 func ticker(loc string, i int) {
 
-	log.Println(loc, i)
+	Logger.Logf(loc, "%s", i)
 }
 
 func MainThread(ctx ftp_context.Context) context.Context {
@@ -64,7 +67,7 @@ func MainThread(ctx ftp_context.Context) context.Context {
 
 		child_ctx := ctx.NewChild()
 		child_ctx.SetDeadline(tick)
-		log.Println("starting client cycle")
+		Logger.Logf(loc, "starting client cycle")
 		/**
 		* five tasks:
 		*	1. Read all files in directory
@@ -84,25 +87,25 @@ func MainThread(ctx ftp_context.Context) context.Context {
 		rd, err1 := dir_handler.ReadDir(child_ctx.Add(), ClientConfig.DirConfig)
 		ticker(loc, 2)
 		if err1 != nil {
-			log.Println("error occured, shutdown: ", ClientConfig.StopOnError)
+			Logger.Logf(loc, "error occured, shutdown: %s", ClientConfig.StopOnError)
 			if ClientConfig.StopOnError {
 				log.Fatalln(err1.Error())
 			}
-			log.Println(err1.Error())
+			Logger.LogErr(loc, err1)
 			_, ok = <-tckr.C
 			continue
 		}
 
 		ticker(loc, 3)
-		log.Println("to rehash:\n", strings.Join(rd.ToRehash, "\n"))
-		log.Println("to upload:\n", strings.Join(rd.ToUpload, "\n"))
+		Logger.Logf(loc, "to rehash:\n%s", strings.Join(rd.ToRehash, "\n"))
+		Logger.Logf(loc, "to upload:\n%s", strings.Join(rd.ToUpload, "\n"))
 
 		// child_ctx.Cancel()
 		select {
 		case _, ok = <-ctx.Done():
 
 		case <-child_ctx.Done():
-			log.Println("new tick")
+			Logger.Logf(loc, "new tick")
 
 		}
 	}
@@ -117,27 +120,31 @@ type TestServerConnection struct {
 }
 
 func test_server_connection(client *http.Client, host string, tsc *TestServerConnection) {
-	log.Println("test_server_connection")
+	loc := " test_server_connection(client *http.Client, host string, tsc *TestServerConnection)"
+	Logger.Logf(loc, "test_server_connection")
 	rc := netclient.Route{
 		BaseUrl:  host,
 		Pathname: "/ping",
 	}
 	_, err1 := netclient.MakeGetRequest(client, rc, &tsc.tmp)
 	if err1 != nil {
-		log.Println("error here")
+		Logger.Logf(loc, "error here")
 		tsc.count += 1
 		if tsc.count < 5 {
-			log.Println(err1.Error())
+			Logger.LogErr(loc, err1)
+
 		} else {
-			log.Fatalln(err1.Error())
+			Logger.LogErr(loc, err1)
+			os.Exit(1)
 		}
 		<-tsc.tc.C
 		test_server_connection(client, host, tsc)
 	}
 
-	log.Println("server connected successfully:", host)
+	Logger.Logf(loc, "server connected successfully: %s", host)
 }
 func UpdateFileTree(ctx ftp_context.Context) {
+	loc := "UpdateFileTree(ctx ftp_context.Context)"
 	defer ctx.Finished()
 	tc := time.NewTicker(time.Minute)
 	for ok := true; ok; {
@@ -148,8 +155,8 @@ func UpdateFileTree(ctx ftp_context.Context) {
 
 		err := dir_handler.WriteFileTree(ctx)
 		if err != nil {
-			log.Println(err)
+			Logger.LogErr(loc, err)
 		}
-		log.Println("updated filetree successfully")
+		Logger.Logf(loc, "updated filetree successfully")
 	}
 }

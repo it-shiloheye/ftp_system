@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 
 	"io"
-	"log"
 	"net/http"
-	
 
+	"github.com/it-shiloheye/ftp_system/client/main_thread/logging"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 )
 
-
+var Logger = logging.Logger
 
 func make_get_request(client *http.Client, route string, tmp any) (res *http.Response, out []byte, err ftp_context.LogErr) {
 	loc := "make_get_request(client *http.Client, route string, tmp any) (res *http.Response, out []byte, err ftp_context.LogErr)"
@@ -19,7 +18,7 @@ func make_get_request(client *http.Client, route string, tmp any) (res *http.Res
 
 	res, eror = client.Get(route)
 	if eror != nil {
-		log.Println(eror.Error())
+		Logger.LogErr(loc, eror)
 		return res, nil, ftp_context.NewLogItem(loc, true).
 			SetAfter("client.Get").
 			AppendParentError(eror)
@@ -28,7 +27,7 @@ func make_get_request(client *http.Client, route string, tmp any) (res *http.Res
 	// log.Println(loc, "client.Get(route)", "done", res)
 	out, eror = io.ReadAll(res.Body)
 	if eror != nil {
-		log.Println(eror.Error())
+		Logger.LogErr(loc, eror)
 		return res, nil, ftp_context.NewLogItem(loc, true).
 			SetAfter("out, eror = io.ReadAll(res.Body)").
 			SetMessage(eror.Error()).
@@ -37,7 +36,7 @@ func make_get_request(client *http.Client, route string, tmp any) (res *http.Res
 	// log.Println(loc, string(out))
 	eror = json.Unmarshal(out, tmp)
 	if eror != nil {
-		log.Println(eror.Error())
+		Logger.LogErr(loc, eror)
 		return res, out, ftp_context.NewLogItem(loc, true).
 			SetAfter("json.Unmarshal(out, tmp)").
 			AppendParentError(eror)

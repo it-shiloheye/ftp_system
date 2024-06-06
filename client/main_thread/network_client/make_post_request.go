@@ -1,9 +1,7 @@
 package netclient
 
 import (
-	
 	"io"
-	"log"
 	"net/http"
 
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
@@ -15,7 +13,7 @@ func make_post_request(client *http.Client, route string, contentType string, bo
 
 	res, eror = client.Post(route, contentType, body)
 	if eror != nil {
-		log.Println(eror.Error())
+		Logger.LogErr(loc, eror)
 		return res, nil, ftp_context.NewLogItem(loc, true).
 			SetAfter("client.Get").
 			AppendParentError(eror)
@@ -24,7 +22,7 @@ func make_post_request(client *http.Client, route string, contentType string, bo
 	// log.Println(loc, "client.Get(route)", "done", res)
 	out, eror = io.ReadAll(res.Body)
 	if eror != nil {
-		log.Println(eror.Error())
+		Logger.LogErr(loc, eror)
 		return res, nil, ftp_context.NewLogItem(loc, true).
 			SetAfter("out, eror = io.ReadAll(res.Body)").
 			SetMessage(eror.Error()).

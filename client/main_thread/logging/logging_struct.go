@@ -123,17 +123,25 @@ func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {
 		case _, ok = <-ctx.Done():
 			break
 		case li = <-ls.comm:
-			queue = append(queue, li)
+			if li != nil {
+				queue = append(queue, li)
+			}
 			continue
 
 		case lerr = <-ls.err_c:
-			err_queue = append(err_queue, lerr)
+			if lerr != nil {
+				err_queue = append(err_queue, lerr)
+			}
 			continue
 		case <-tc.C:
 		}
 
 		for _, li := range queue {
-			log_txt += li.String() + "\n"
+			if li == nil {
+				continue
+			}
+
+			log_txt = log_txt + li.String() + "\n"
 		}
 
 		log.SetOutput(log_file)
@@ -142,8 +150,12 @@ func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {
 		log.SetOutput(os.Stdout)
 		log.Print(log_txt)
 
-		for _, li := range err_queue {
-			err_txt += li.Error() + "\n"
+		for _, lerr = range err_queue {
+			if lerr == nil {
+				continue
+			}
+
+			err_txt = err_txt + li.Error() + "\n"
 		}
 
 		log.SetOutput(log_err_file)
