@@ -1,4 +1,3 @@
-start powershell "npm run kill:server "
-start powershell "npm run kill:client"
-start powershell "npm run kill:air"
-start powershell
+Get-ChildItem * -Include *.lock -Recurse | Remove-Item
+powershell "taskkill -im air.exe -im node.exe -im ftp_server.exe -im ftp_client.exe -im tee -f"
+

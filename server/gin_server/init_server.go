@@ -84,20 +84,20 @@ func init() {
 	if err1 != nil {
 		if !errors.Is(err1, os.ErrNotExist) {
 			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     "ca_buf, err1 := os.ReadFile(certs_loc.CA())",
-				Message:   err1.Error(),
-				CallStack: []error{err1},
+
+				After:   "ca_buf, err1 := os.ReadFile(certs_loc.CA())",
+				Message: err1.Error(),
+				Err:     true, CallStack: []error{err1},
 			})
 		}
 
 		err2 := os.MkdirAll(certs_loc.CertsDirectory, f_mode)
 		if err2 != nil && !errors.Is(err2, os.ErrExist) {
 			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     "err2 := os.MkdirAll(certs_loc.CertsDirectory, f_mode)",
-				Message:   err2.Error(),
-				CallStack: []error{err2, err1},
+
+				After:   "err2 := os.MkdirAll(certs_loc.CertsDirectory, f_mode)",
+				Message: err2.Error(),
+				Err:     true, CallStack: []error{err2, err1},
 			})
 		}
 
@@ -105,29 +105,29 @@ func init() {
 		if err3 != nil {
 			if !errors.Is(err3, os.ErrNotExist) {
 				log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-					Err:       true,
-					After:     "cd_buf, err3 := os.ReadFile(certs_loc.CertData())",
-					Message:   err3.Error(),
-					CallStack: []error{err3, err1},
+
+					After:   "cd_buf, err3 := os.ReadFile(certs_loc.CertData())",
+					Message: err3.Error(),
+					Err:     true, CallStack: []error{err3, err1},
 				})
 			}
 
 			cd_buf, err4 := json.MarshalIndent(&template_cd, " ", "\t")
 			if err4 != nil {
 				log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-					Err:       true,
-					After:     `cd_buf, err4 := json.MarshalIndent(&template_cd," ","\t")`,
-					Message:   err4.Error(),
-					CallStack: []error{err3, err1},
+
+					After:   `cd_buf, err4 := json.MarshalIndent(&template_cd," ","\t")`,
+					Message: err4.Error(),
+					Err:     true, CallStack: []error{err3, err1},
 				})
 			}
 			err5 := os.WriteFile(certs_loc.CertData(), cd_buf, f_mode)
 			if err5 != nil {
 				log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-					Err:       true,
-					After:     `err5 := os.WriteFile(certs_loc.CertData(),cd_buf,f_mode)`,
-					Message:   err5.Error(),
-					CallStack: []error{err3, err1},
+
+					After:   `err5 := os.WriteFile(certs_loc.CertData(),cd_buf,f_mode)`,
+					Message: err5.Error(),
+					Err:     true, CallStack: []error{err3, err1},
 				})
 			}
 
@@ -137,10 +137,10 @@ func init() {
 		err4 := json.Unmarshal(cd_buf, &certs_loc.cert_d)
 		if err4 != nil {
 			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     `err4 := json.Unmarshal(cd_buf,&certs_loc.cert_d)`,
-				Message:   err4.Error(),
-				CallStack: []error{err1},
+
+				After:   `err4 := json.Unmarshal(cd_buf,&certs_loc.cert_d)`,
+				Message: err4.Error(),
+				Err:     true, CallStack: []error{err1},
 			})
 		}
 
@@ -149,10 +149,10 @@ func init() {
 		tmp, err5 := ftp_tlshandler.GenerateCAPem(tmp_x509)
 		if err5 != nil {
 			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     `tmp, err5 := ftp_tlshandler.GenerateCAPem(tmp_x509)`,
-				Message:   err5.Error(),
-				CallStack: []error{err1},
+
+				After:   `tmp, err5 := ftp_tlshandler.GenerateCAPem(tmp_x509)`,
+				Message: err5.Error(),
+				Err:     true, CallStack: []error{err1},
 			})
 		}
 
@@ -161,10 +161,10 @@ func init() {
 		ca_buf_, err6 := json.MarshalIndent(&tmp, " ", "\t")
 		if err6 != nil {
 			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     `ca_buf_, err6 := json.MarshalIndent(&tmp," ","\t")`,
-				Message:   err6.Error(),
-				CallStack: []error{err1},
+
+				After:   `ca_buf_, err6 := json.MarshalIndent(&tmp," ","\t")`,
+				Message: err6.Error(),
+				Err:     true, CallStack: []error{err1},
 			})
 		}
 		ca_buf = ca_buf_
@@ -214,10 +214,10 @@ func init() {
 		tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem, x509_tls_cert)
 		if err3 != nil {
 			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     "tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem,x509_tls_cert)",
-				Message:   err3.Error(),
-				CallStack: []error{err3, err2},
+
+				After:   "tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem,x509_tls_cert)",
+				Message: err3.Error(),
+				Err:     true, CallStack: []error{err3, err2},
 			})
 		}
 		*certs_loc.tlsCert = tmp

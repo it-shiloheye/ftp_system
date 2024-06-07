@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"strings"
+	// "strings"
 
 	"log"
 	"time"
@@ -17,18 +17,27 @@ import (
 
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	// filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
+	// filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 )
 
 var ClientConfig = initialiseclient.ClientConfig
 var Logger = logging.Logger
+var FileTree = dir_handler.FileTree
 
 func ticker(loc string, i int) {
 
-	Logger.Logf(loc, "%s", i)
+	// Logger.Logf(loc, "%d", i)
 }
 
 func MainThread(ctx ftp_context.Context) context.Context {
 	loc := "MainThread(ctx ftp_context.Context) context.Context "
+
+	lock, ERR := dir_handler.Lock(ClientConfig.DataDir + "/index.lock")
+	defer lock.Unlock()
+	if ERR != nil {
+		log.Println(ERR)
+		log.Fatalln("cannot obtain lock on data/dir")
+	}
 
 	ticker(loc, 1)
 	defer ctx.Wait()
@@ -96,10 +105,9 @@ func MainThread(ctx ftp_context.Context) context.Context {
 			continue
 		}
 
-		ticker(loc, 3)
-		Logger.Logf(loc, "to rehash:\n%s", strings.Join(rd.ToRehash, "\n"))
-		Logger.Logf(loc, "to upload:\n%s", strings.Join(rd.ToUpload, "\n"))
-
+		for _, file_ := range rd.ToRehash {
+			Logger.Logf("hashing: %s", file_)
+		}
 		// child_ctx.Cancel()
 		select {
 		case _, ok = <-ctx.Done():
@@ -159,4 +167,13 @@ func UpdateFileTree(ctx ftp_context.Context) {
 		}
 		Logger.Logf(loc, "updated filetree successfully")
 	}
+}
+
+func hashing_piston(ctx ftp_context.Context, to_hash string) (done_hashing string, err error) {
+	loc := "hashing_piston(ctx ftp_context.Context, to_hash string) (done_hashing string, err error)"
+	Logger.Logf(loc, "entering hashing piston, hashing: %s", to_hash)
+
+	Logger.Logf(loc, "exiting hashing piston, successful hashing: %s", to_hash)
+	return
+
 }

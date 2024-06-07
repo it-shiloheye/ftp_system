@@ -4,6 +4,7 @@
 **/tmp
 *.json
 !*.schema.json
+!package*.json
 
 */tmp*
 /.git

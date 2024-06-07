@@ -17,37 +17,44 @@ import (
 )
 
 var Logger = &LoggerStruct{
-	lock:  sync.Mutex{},
+
 	comm:  make(chan *ftp_context.LogItem, 100),
 	err_c: make(chan error, 100),
 }
 var ClientConfig = &initialiseclient.ClientConfigStruct{}
+var lock = &sync.Mutex{}
 
 type LoggerStruct struct {
-	lock  sync.Mutex
 	comm  chan *ftp_context.LogItem
 	err_c chan error
 }
 
 var log_file = &filehandler.FileBasic{}
 var log_err_file = &filehandler.FileBasic{}
+var log_today_file = &filehandler.FileBasic{}
 
 func init() {
 	log.Println("loading logger")
+	if len(ClientConfig.DataDir) < 1 {
+		ClientConfig.DataDir = "./data"
+	}
 
 	loc := "ftp_system/client/main_thread/logging/logging_struct.go"
 	log_file_p := ClientConfig.DataDir + "/log/log_file.txt"
 	log_err_file_p := ClientConfig.DataDir + "/log/log_err_file.txt"
-	log.Printf("%s\n%s/n%s\n", loc, log_file_p, log_err_file_p)
-	var err1, err2, err3 error
+	log_today_file_p := ClientConfig.DataDir + "/log/sess/" + log_file_name() + ".txt"
 
-	err1 = os.MkdirAll(ClientConfig.DataDir+"/log", fs.FileMode(ftp_base.S_IRWXO|ftp_base.S_IRWXU))
+	log.Printf("%s\nlog_file_p: %s\nlog_err_file_p: %s\n", loc, log_file_p, log_err_file_p)
+	// os.Exit(1)
+	var err1, err2, err3, err4 error
+
+	err1 = os.MkdirAll(ClientConfig.DataDir+"/log/sess", fs.FileMode(ftp_base.S_IRWXO|ftp_base.S_IRWXU))
 	if !errors.Is(err1, os.ErrExist) && err1 != nil {
 		a := &ftp_context.LogItem{
-			Location:  loc,
-			Time:      time.Now(),
-			Message:   err1.Error(),
-			CallStack: []error{err1},
+			Location: loc,
+			Time:     time.Now(),
+			Message:  err1.Error(),
+			Err:      true, CallStack: []error{err1},
 		}
 		log.Fatalln(a)
 	}
@@ -55,10 +62,10 @@ func init() {
 	log_file.File, err2 = ftp_base.OpenFile(log_file_p, os.O_APPEND|os.O_RDWR|os.O_CREATE)
 	if err2 != nil {
 		b := &ftp_context.LogItem{
-			Location:  loc,
-			Time:      time.Now(),
-			Message:   err2.Error(),
-			Err:       true,
+			Location: loc,
+			Time:     time.Now(),
+			Message:  err2.Error(),
+
 			CallStack: []error{err2},
 		}
 		log.Fatalln(b)
@@ -69,9 +76,21 @@ func init() {
 		c := &ftp_context.LogItem{
 			Location:  loc,
 			Time:      time.Now(),
-			Message:   err2.Error(),
+			Message:   err3.Error(),
 			Err:       true,
 			CallStack: []error{err3},
+		}
+		log.Fatalln(c)
+	}
+
+	log_today_file, err4 = filehandler.Create(log_today_file_p)
+	if err4 != nil {
+		c := &ftp_context.LogItem{
+			Location:  loc,
+			Time:      time.Now(),
+			Message:   err4.Error(),
+			Err:       true,
+			CallStack: []error{err4},
 		}
 		log.Fatalln(c)
 	}
@@ -80,9 +99,7 @@ func init() {
 }
 
 func (ls *LoggerStruct) Log(li *ftp_context.LogItem) {
-	if li.Err {
-		ls.err_c <- li
-	}
+
 	ls.comm <- li
 }
 
@@ -106,32 +123,29 @@ func (ls *LoggerStruct) LogErr(loc string, err error) {
 }
 
 func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {
-	ls.lock.Lock()
+	lock.Lock()
 	defer ctx.Finished()
-	defer ls.lock.Unlock()
+	defer lock.Unlock()
 
 	tc := time.NewTicker(time.Second)
+	mis_ticker := time.NewTicker(time.Millisecond * 200)
 	var li *ftp_context.LogItem
-	var lerr error
-	queue := []*ftp_context.LogItem{}
-	err_queue := []error{}
 
-	var log_txt, err_txt string
+	queue := []*ftp_context.LogItem{}
+
+	var txt, log_txt, err_txt string
+	int_ := 0
 	for ok := true; ok; {
 		log_txt, err_txt = "", ""
+		int_ += 1
 		select {
 		case _, ok = <-ctx.Done():
-			break
+
 		case li = <-ls.comm:
 			if li != nil {
 				queue = append(queue, li)
 			}
-			continue
-
-		case lerr = <-ls.err_c:
-			if lerr != nil {
-				err_queue = append(err_queue, lerr)
-			}
+			// log.Println(int_, "none: new li")
 			continue
 		case <-tc.C:
 		}
@@ -141,31 +155,40 @@ func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {
 				continue
 			}
 
-			log_txt = log_txt + li.String() + "\n"
-		}
-
-		log.SetOutput(log_file)
-		log.Print(log_txt)
-
-		log.SetOutput(os.Stdout)
-		log.Print(log_txt)
-
-		for _, lerr = range err_queue {
-			if lerr == nil {
+			txt = li.String() + "\n"
+			if len(txt) < 2 {
 				continue
 			}
-
-			err_txt = err_txt + li.Error() + "\n"
+			log_txt = log_txt + txt
+			if li.Err {
+				err_txt = err_txt + txt
+				log.SetOutput(os.Stderr)
+				log.Print(txt)
+			} else {
+				log.SetOutput(os.Stdout)
+				log.Printf("\n%s:\n%s", li.Location, li.Message)
+			}
+			<-mis_ticker.C
 		}
 
-		log.SetOutput(log_err_file)
-		log.Print(err_txt)
+		if len(log_txt) > 0 {
+			log.SetOutput(log_today_file)
+			log.Print(log_txt)
 
-		log.SetOutput(os.Stderr)
-		log.Print(err_txt)
+			log.SetOutput(log_file)
+			log.Print(log_txt)
+		}
+
+		if len(err_txt) > 0 {
+			log.SetOutput(log_err_file)
+			log.Print(log_txt)
+
+		}
 
 		clear(queue)
-		clear(err_queue)
+
+		log.SetOutput(os.Stdout)
+		// log.Println(int_, "none: done engine")
 	}
 
 }

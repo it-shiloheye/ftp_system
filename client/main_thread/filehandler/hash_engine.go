@@ -1,10 +1,70 @@
 package dir_handler
 
 import (
-	
+	"sync"
+
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 )
+
+type HashPiston struct {
+	sync.WaitGroup
+	f_path chan string
+	done   chan string
+	err    chan error
+}
+
+func NewHashingPiston() *HashPiston {
+	return &HashPiston{
+		f_path: make(chan string, 10),
+		done:   make(chan string, 10),
+		err:    make(chan error, 10),
+	}
+}
+
+func (hp *HashPiston) Send(f string) {
+	hp.Add(1)
+	hp.f_path <- f
+}
+
+func (hp *HashPiston) Get() <-chan string {
+	return hp.done
+}
+
+func (hp *HashPiston) HandleError(ctx ftp_context.Context) {
+	defer ctx.Finished()
+	for ok := true; ok; {
+		select {
+		case _, ok = <-ctx.Done():
+			break
+		case err := <-hp.err:
+			Logger.LogErr("HandleError", err)
+
+		}
+	}
+}
+
+func (hp *HashPiston) Piston(ctx ftp_context.Context) {
+	hp.Add(1)
+	hashing_piston(ctx, hp.f_path, hp.done, hp.err)
+	hp.Done()
+}
+
+func (hp *HashPiston) Close() {
+	close(hp.f_path)
+}
+
+func (hp *HashPiston) Wait() {
+	hp.WaitGroup.Wait()
+	close(hp.done)
+	close(hp.err)
+}
+
+func (hp *HashPiston) Reset() {
+	hp.f_path = make(chan string, 10)
+	hp.done = make(chan string, 10)
+	hp.err = make(chan error, 10)
+}
 
 func hashing_piston(ctx ftp_context.Context, file_path_chan <-chan string, done chan string, err chan error) {
 	loc := "hashing_piston(ctx ftp_context.Context,file_path_chan <-chan string, err chan error)"
@@ -32,10 +92,11 @@ func hashing_piston(ctx ftp_context.Context, file_path_chan <-chan string, done 
 					SetMessage(err1.Error()).
 					SetAfterf(`tmp_fh, err1 := filehandler.NewFileHashOpen(%s)`, file_path).
 					AppendParentError(err1)
+
 				continue
 			}
 
-			FileTree.FileMap.Set(file_path,tmp_fh)
+			FileTree.FileMap.Set(file_path, tmp_fh)
 		}
 
 		tmp_fh.Hash, err2 = filehandler.HashFile(tmp_fh.FileBasic, bts)
@@ -44,10 +105,12 @@ func hashing_piston(ctx ftp_context.Context, file_path_chan <-chan string, done 
 				SetMessage(err2.Error()).
 				SetAfterf(`tmp_fh.Hash, err2 =	filehandler.HashFile(tmp_fh.FileBasic,bts)`).
 				AppendParentError(err2)
+
 			continue
 		}
 
-		FileTree.HashQueue.Set(file_path,tmp_fh)
+		FileTree.HashQueue.Set(file_path, tmp_fh)
+
 	}
 
 }

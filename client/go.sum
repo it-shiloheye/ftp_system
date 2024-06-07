@@ -47,6 +47,8 @@ github.com/it-shiloheye/ftp_system_lib v0.4.3 h1:FJWE5Js8sOXyg8vK6zaMImptkUID2bx
 github.com/it-shiloheye/ftp_system_lib v0.4.3/go.mod h1:VsMWpZiR4NeiPcA9KApENsMzklcwR5ZOPGdBC+ZTtWw=
 github.com/it-shiloheye/ftp_system_lib v0.4.4 h1:ZRLm9143rgK5cx/qvweL8ebmmyOrqzWL/TqtHgBizec=
 github.com/it-shiloheye/ftp_system_lib v0.4.4/go.mod h1:VsMWpZiR4NeiPcA9KApENsMzklcwR5ZOPGdBC+ZTtWw=
+github.com/it-shiloheye/ftp_system_lib v0.4.5 h1:1Tf9ClOzSQflSl1jlAw9lBib3JOo/ji7xcKGV/uYdoc=
+github.com/it-shiloheye/ftp_system_lib v0.4.5/go.mod h1:VsMWpZiR4NeiPcA9KApENsMzklcwR5ZOPGdBC+ZTtWw=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
