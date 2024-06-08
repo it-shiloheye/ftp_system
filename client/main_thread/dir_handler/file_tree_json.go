@@ -10,7 +10,6 @@ import (
 
 	"os"
 
-	"github.com/it-shiloheye/ftp_system_lib/base"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 
 	ftp_base "github.com/it-shiloheye/ftp_system_lib/base"
@@ -20,12 +19,23 @@ import (
 
 var FileTree = NewFileTreeJson()
 
-type FileTreeJson struct {
-	lock    sync.RWMutex
-	FileMap ftp_base.MutexedMap[*filehandler.FileHash] `json:"files"`
+type FileState string
 
-	HashQueue ftp_base.MutexedMap[*filehandler.FileHash] `json:"hash_queue"`
-	Uploaded  ftp_base.MutexedMap[*filehandler.FileHash] `json:"uploaded"`
+const (
+	FileStateHashed     FileState = "hashed"
+	FileStateToHash     FileState = "to-hash"
+	FileStateUploaded   FileState = "uploaded"
+	FileStateToUpload   FileState = "to-upload"
+	FileStateDownloaded FileState = "downloaded"
+	FileStateToDownload FileState = "to-download"
+)
+
+type FileTreeJson struct {
+	lock       sync.RWMutex
+	Extensions map[string]bool
+	FileMap    ftp_base.MutexedMap[*filehandler.FileHash] `json:"files"`
+
+	FileState ftp_base.MutexedMap[FileState] `json:"file_state"`
 }
 
 func init() {
@@ -43,7 +53,7 @@ func init() {
 			if err2 != nil {
 				log.Fatalln(err2)
 			}
-			err3 := os.WriteFile(file_tree_path, tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
+			err3 := os.WriteFile(file_tree_path, tmp, fs.FileMode(ftp_base.S_IRWXU|ftp_base.S_IRWXO))
 			if err2 != nil {
 				log.Fatalln(err3)
 			}
@@ -64,10 +74,9 @@ func init() {
 
 func NewFileTreeJson() *FileTreeJson {
 	return &FileTreeJson{
-		FileMap: ftp_base.NewMutexedMap[*filehandler.FileHash](),
-
-		HashQueue: ftp_base.NewMutexedMap[*filehandler.FileHash](),
-		Uploaded:  ftp_base.NewMutexedMap[*filehandler.FileHash](),
+		FileMap:    ftp_base.NewMutexedMap[*filehandler.FileHash](),
+		Extensions: map[string]bool{},
+		FileState:  ftp_base.NewMutexedMap[FileState](),
 	}
 }
 
@@ -86,11 +95,11 @@ func WriteFileTree(ctx ftp_context.Context) (err ftp_context.LogErr) {
 			CallStack: []error{err1},
 		}
 	}
-	err2 := os.WriteFile(file_tree_path, tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
+	err2 := os.WriteFile(file_tree_path, tmp, fs.FileMode(ftp_base.S_IRWXU|ftp_base.S_IRWXO))
 	if err2 != nil {
 		return &ftp_context.LogItem{Location: loc, Time: time.Now(),
 			Err:       true,
-			After:     `err2 := os.WriteFile(file_tree_path, tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))`,
+			After:     `err2 := os.WriteFile(file_tree_path, tmp, fs.FileMode(ftp_base.S_IRWXU|ftp_base.S_IRWXO))`,
 			Message:   err2.Error(),
 			CallStack: []error{err2},
 		}
@@ -103,28 +112,28 @@ var tc = time.NewTimer(time.Millisecond)
 
 func (ft *FileTreeJson) Lock() {
 	ft.lock.Lock()
-	ft.HashQueue.Lock()
-	ft.Uploaded.Lock()
+
+	ft.FileState.Lock()
 	ft.FileMap.Lock()
 
 }
 func (ft *FileTreeJson) Unlock() {
-	ft.HashQueue.Unlock()
-	ft.Uploaded.Unlock()
+
+	ft.FileState.Unlock()
 	ft.FileMap.Unlock()
 	ft.lock.Unlock()
 }
 
 func (ft *FileTreeJson) RLock() {
 	ft.lock.RLock()
-	ft.HashQueue.RLock()
-	ft.Uploaded.RLock()
+
+	ft.FileState.RLock()
 	ft.FileMap.RLock()
 
 }
 func (ft *FileTreeJson) RUnlock() {
-	ft.HashQueue.RUnlock()
-	ft.Uploaded.RUnlock()
+
+	ft.FileState.RUnlock()
 	ft.FileMap.RUnlock()
 	ft.lock.RUnlock()
 }

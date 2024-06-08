@@ -3,6 +3,7 @@ package initialiseclient
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/it-shiloheye/ftp_system_lib/base"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
+	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 )
 
 var ClientConfig = &ClientConfigStruct{}
@@ -73,8 +75,34 @@ func init() {
 	log.Println("successfull loaded config")
 }
 
-func WriteConfig() (err ftp_context.LogErr) {
+func WriteConfig(i ...int) (err ftp_context.LogErr) {
 	loc := "WriteConfig() (err ftp_context.LogErr)"
+
+	lock_file := ClientConfig.DataDir + "/config.lock"
+	log.Println(lock_file)
+	l, err3 := filehandler.Lock(lock_file)
+	if err3 != nil {
+		i_i := 0
+		if len(i) > 0 {
+			i_i = i[0]
+		}
+		if i_i < 5 {
+			<-time.After(time.Second * 5)
+			err = WriteConfig(i_i + 2)
+			log.Println("try ", i_i, "to write config")
+			return
+		}
+		err = &ftp_context.LogItem{
+			Location: loc,
+			Time:     time.Now(),
+			Err:      true,
+			After:    fmt.Sprintf(`l, err3  := filehandler.Lock(%s)`, lock_file),
+			Message:  "not able to obtain lock",
+		}
+		return
+	}
+	defer l.Unlock()
+
 	tmp, err1 := json.MarshalIndent(ClientConfig, " ", "\t")
 	if err1 != nil {
 		return &ftp_context.LogItem{Location: loc, Time: time.Now(),

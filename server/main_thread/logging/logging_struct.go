@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	initialiseclient "github.com/it-shiloheye/ftp_system/client/init_client"
+	ginserver "github.com/it-shiloheye/ftp_system/server/gin_server"
 	ftp_base "github.com/it-shiloheye/ftp_system_lib/base"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	"github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
@@ -18,12 +18,14 @@ import (
 
 type Loc string
 
+var ServerConfig = ginserver.ServerConfig
+
 var Logger = &LoggerStruct{
 
 	comm:  make(chan *ftp_context.LogItem, 100),
 	err_c: make(chan error, 100),
 }
-var ClientConfig = &initialiseclient.ClientConfigStruct{}
+var ServerConfig = &initialiseclient.Serv{}
 var lock = &sync.Mutex{}
 
 type LoggerStruct struct {

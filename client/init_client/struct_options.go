@@ -96,12 +96,12 @@ func BlankClientConfigStruct() ClientConfigStruct {
 		// where root CA is stored
 		CA_Location: "./data/ssl_certs",
 		// unique id of current client
-		ClientId: "",
+		ClientId: uuid.NewString(),
 		// common name of current client
 		CommonName: "",
 		// back up instructions of current client
 		DirConfig: DirConfig{
-			Id:            uuid.New().String(),
+			Id:            uuid.NewString(),
 			Path:          "",
 			ExcludeDirs:   []string{".git", "node_modules", "vendor", "tmp", ".next"},
 			ExcluedFile:   []string{"~"},

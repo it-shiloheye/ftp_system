@@ -13,13 +13,13 @@ import (
 var Logger = logging.Logger
 
 func make_get_request(client *http.Client, route string, tmp any) (res *http.Response, out []byte, err ftp_context.LogErr) {
-	loc := "make_get_request(client *http.Client, route string, tmp any) (res *http.Response, out []byte, err ftp_context.LogErr)"
+	loc := logging.Loc("make_get_request(client *http.Client, route string, tmp any) (res *http.Response, out []byte, err ftp_context.LogErr)")
 	var eror error
 
 	res, eror = client.Get(route)
 	if eror != nil {
 		Logger.LogErr(loc, eror)
-		return res, nil, ftp_context.NewLogItem(loc, true).
+		return res, nil, ftp_context.NewLogItem(string(loc), true).
 			SetAfter("client.Get").
 			AppendParentError(eror)
 
@@ -28,7 +28,7 @@ func make_get_request(client *http.Client, route string, tmp any) (res *http.Res
 	out, eror = io.ReadAll(res.Body)
 	if eror != nil {
 		Logger.LogErr(loc, eror)
-		return res, nil, ftp_context.NewLogItem(loc, true).
+		return res, nil, ftp_context.NewLogItem(string(loc), true).
 			SetAfter("out, eror = io.ReadAll(res.Body)").
 			SetMessage(eror.Error()).
 			AppendParentError(eror)
@@ -37,7 +37,7 @@ func make_get_request(client *http.Client, route string, tmp any) (res *http.Res
 	eror = json.Unmarshal(out, tmp)
 	if eror != nil {
 		Logger.LogErr(loc, eror)
-		return res, out, ftp_context.NewLogItem(loc, true).
+		return res, out, ftp_context.NewLogItem(string(loc), true).
 			SetAfter("json.Unmarshal(out, tmp)").
 			AppendParentError(eror)
 

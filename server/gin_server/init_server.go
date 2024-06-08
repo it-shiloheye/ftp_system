@@ -268,6 +268,8 @@ func gin_server_main_thread(ctx ftp_context.Context, server_cert *ftp_tlshandler
 		})
 	})
 
+	RegisterRoutes(r)
+
 	ctx.Add()
 	go func() {
 		defer ctx.Finished()

@@ -16,7 +16,7 @@ var ClientConfig = initialiseclient.ClientConfig
 var Logger = logging.Logger
 
 func main() {
-	loc := "main"
+	loc := logging.Loc("main")
 	if ClientConfig == nil {
 		log.Fatalln("no client config")
 	}
@@ -32,7 +32,7 @@ func main() {
 }
 
 func UpdateConfig(ctx ftp_context.Context) {
-	loc := "UpdateConfig(ctx ftp_context.Context)"
+	loc := logging.Loc("UpdateConfig(ctx ftp_context.Context)")
 	defer ctx.Finished()
 	tc := time.NewTicker(time.Minute)
 	for ok := true; ok; {

@@ -2,18 +2,15 @@ package mainthread
 
 import (
 	"context"
-	"fmt"
+
 	"log"
 	"time"
 
-	"github.com/it-shiloheye/ftp_system/server/main_thread/actions"
 	configuration "github.com/it-shiloheye/ftp_system_lib/config"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
-	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler"
-	githandler "github.com/it-shiloheye/ftp_system_lib/git_handler"
 )
 
-func MainThread(ctx ftp_context.Context) context.Context {
+func OMainThread(ctx ftp_context.Context) context.Context {
 	defer ctx.Wait()
 	cfg, ok := ctx.Get("config")
 	if !ok {
@@ -28,16 +25,13 @@ func MainThread(ctx ftp_context.Context) context.Context {
 		log.Fatalln("add at least one file to include list")
 	}
 
-	gte := githandler.GitEngine{}
-	gte.Init(ctx.NewChild())
-
 	tick := time.Duration(config.UpdateRate) * time.Minute
 	tckr := time.NewTicker(tick)
 	for ok {
 
 		child_ctx := ctx.NewChild()
 		child_ctx.SetDeadline(tick)
-		log.Println("starting git cycle")
+
 		/**
 		* five tasks:
 		*	1. Read all files in directory
@@ -54,25 +48,6 @@ func MainThread(ctx ftp_context.Context) context.Context {
 		*	5. Transmit over network any new changes where necessary
 		 */
 
-		for _, directory := range config.Include {
-			log.Println("loading ", directory)
-			ls, err := filehandler.ReadDir(child_ctx, directory, append(config.Exclude, ".git"))
-			if err != nil {
-				log.Fatalln(err.Error())
-			}
-			for _, f := range ls[:5] {
-				fmt.Println(f.Path, " found")
-			}
-			act_err := actions.Write_directory_files_list(directory, ls)
-			if act_err != nil {
-				log.Fatalln(act_err)
-			}
-
-			err = gte.Commit(directory)
-			if err != nil {
-				log.Fatalln(err)
-			}
-		}
 		// child_ctx.Cancel()
 		select {
 		case _, ok = <-ctx.Done():
