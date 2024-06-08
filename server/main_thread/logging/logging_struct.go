@@ -18,14 +18,12 @@ import (
 
 type Loc string
 
-var ServerConfig = ginserver.ServerConfig
-
 var Logger = &LoggerStruct{
 
 	comm:  make(chan *ftp_context.LogItem, 100),
 	err_c: make(chan error, 100),
 }
-var ServerConfig = &initialiseclient.Serv{}
+var ServerConfig = ginserver.ServerConfig
 var lock = &sync.Mutex{}
 
 type LoggerStruct struct {
@@ -39,20 +37,22 @@ var log_today_file = &filehandler.FileBasic{}
 
 func init() {
 	log.Println("loading logger")
-	if len(ClientConfig.DataDir) < 1 {
-		ClientConfig.DataDir = "./data"
+	data_dir := ServerConfig.DirConfig.Path
+	if len(data_dir) < 1 {
+		ServerConfig.DirConfig.Path = "./data"
+		data_dir = "./data"
 	}
 
 	loc := "ftp_system/client/main_thread/logging/logging_struct.go"
-	log_file_p := ClientConfig.DataDir + "/log/log_file.txt"
-	log_err_file_p := ClientConfig.DataDir + "/log/log_err_file.txt"
-	log_today_file_p := ClientConfig.DataDir + "/log/sess/" + log_file_name() + ".txt"
+	log_file_p := data_dir + "/log/log_file.txt"
+	log_err_file_p := data_dir + "/log/log_err_file.txt"
+	log_today_file_p := data_dir + "/log/sess/" + log_file_name() + ".txt"
 
 	log.Printf("%s\nlog_file_p: %s\nlog_err_file_p: %s\n", loc, log_file_p, log_err_file_p)
 	// os.Exit(1)
 	var err1, err2, err3, err4 error
 
-	err1 = os.MkdirAll(ClientConfig.DataDir+"/log/sess", fs.FileMode(ftp_base.S_IRWXO|ftp_base.S_IRWXU))
+	err1 = os.MkdirAll(data_dir+"/log/sess", fs.FileMode(ftp_base.S_IRWXO|ftp_base.S_IRWXU))
 	if !errors.Is(err1, os.ErrExist) && err1 != nil {
 		a := &ftp_context.LogItem{
 			Location: loc,

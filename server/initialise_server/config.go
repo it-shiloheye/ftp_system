@@ -9,23 +9,25 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	initclient "github.com/it-shiloheye/ftp_system_client/init_client"
 
 	"github.com/it-shiloheye/ftp_system_lib/base"
+	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 )
 
-var ServerConfig = &ServerConfigStruct{}
+var ServerConfig = NewConfigStruct()
 
 type ServerConfigStruct struct {
-	Schema            string           `json:"$schema"`
-	SchemaId          string           `json:"$id"`
-	LocalIp           string           `json:"local_ip"`
-	WebIp             string           `json:"web_ip"`
-	CertsDirectory    string           `json:"certs_dir"`
-	StorageDirectory  string           `json:"storage_dir"`
+	Schema         string `json:"$schema"`
+	SchemaId       string `json:"$id"`
+	LocalIp        string `json:"local_ip"`
+	WebIp          string `json:"web_ip"`
+	CertsDirectory string `json:"certs_dir"`
+	initclient.DirConfig
 	TmpDirectory      string           `json:"tmp_directory"`
 	RemoteRepository  string           `json:"remote_git_repo"`
 	Clients           []ClientIDStruct `json:"clients"`
-	TLS_Cert_Creation time.Time        `json:"tls_cert_creation"`
+	TLS_Cert_Creation time.Time
 }
 
 type ClientIDStruct struct {
@@ -35,10 +37,28 @@ type ClientIDStruct struct {
 	ConfigPath string `json:"config_path"`
 }
 
-func (sc ServerConfigStruct) WriteConfig(file_path string) error {
+func (sc ServerConfigStruct) WriteConfig(file_path string, i ...int) error {
+	lock_file_p := ServerConfig.DirConfig.Path + "config.lock"
+
+	l, err1 := filehandler.Lock(lock_file_p)
+	if err1 != nil {
+		return err1
+	}
+	defer l.Unlock()
 
 	tmp, err1 := json.MarshalIndent(&sc, " ", "\t")
 	if err1 != nil {
+		i_ := 0
+		if len(i) > 0 {
+			i_ = i[0]
+			i_ += 1
+		}
+
+		if i_ < 5 {
+			<-time.After(time.Second)
+			return sc.WriteConfig(file_path, i_)
+		}
+
 		return err1
 	}
 
@@ -68,10 +88,7 @@ func init() {
 	b, err := os.ReadFile("./config.json")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			ServerConfig.Schema = "https://json-schema.org/draft/2020-12/schema"
-			ServerConfig.Clients = append(ServerConfig.Clients, ClientIDStruct{
-				Id: uuid.New().String(),
-			})
+
 			tmp, err1 := json.MarshalIndent(ServerConfig, " ", "\t")
 			if err1 != nil {
 				log.Fatalln(err1)
@@ -90,4 +107,17 @@ func init() {
 	if err3 != nil {
 		log.Fatalln(err)
 	}
+}
+
+func NewConfigStruct() (svfg *ServerConfigStruct) {
+	svfg = &ServerConfigStruct{
+		Schema: "https://json-schema.org/draft/2020-12/schema",
+
+		DirConfig: initclient.DirConfig{
+			Id: uuid.NewString(),
+		},
+		Clients: []ClientIDStruct{},
+	}
+
+	return
 }

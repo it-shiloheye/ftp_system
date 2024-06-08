@@ -241,6 +241,8 @@ func init() {
 				CallStack: []error{err5, err2},
 			})
 		}
+
+		ServerConfig.TLS_Cert_Creation = time.Now()
 	} else {
 		// I expect to have a tls_buf with the tls_cert data in bytes
 		err3 := json.Unmarshal(tls_buf, certs_loc.tlsCert)
