@@ -113,7 +113,7 @@ func (ls *LoggerStruct) Logf(loc Loc, str string, v ...any) {
 	}
 }
 
-func (ls *LoggerStruct) LogErr(loc Loc, err error) {
+func (ls *LoggerStruct) LogErr(loc Loc, err error) error {
 	e := &ftp_context.LogItem{
 		Location:  string(loc),
 		Time:      time.Now(),
@@ -122,12 +122,15 @@ func (ls *LoggerStruct) LogErr(loc Loc, err error) {
 		CallStack: []error{err},
 	}
 	ls.Log(e)
+	return e
 }
 
 func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {
 	lock.Lock()
 	defer ctx.Finished()
 	defer lock.Unlock()
+
+	lock_file := ClientConfig.DataDir + "/log.lock"
 
 	tc := time.NewTicker(time.Second)
 
@@ -172,6 +175,12 @@ func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {
 			}
 
 		}
+		l, err1 := filehandler.Lock(lock_file)
+		if err1 != nil {
+			log.Println("err:\n", err1)
+			<-time.After(time.Second * 5)
+			continue
+		}
 
 		if len(log_txt) > 0 {
 			log.SetOutput(log_today_file)
@@ -188,7 +197,7 @@ func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {
 		}
 
 		clear(queue)
-
+		l.Unlock()
 		log.SetOutput(os.Stdout)
 		// log.Println(int_, "none: done engine")
 	}

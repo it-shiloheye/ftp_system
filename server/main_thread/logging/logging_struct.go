@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	ginserver "github.com/it-shiloheye/ftp_system/server/gin_server"
+	"github.com/it-shiloheye/ftp_system/server/initialise_server"
 	ftp_base "github.com/it-shiloheye/ftp_system_lib/base"
 	ftp_context "github.com/it-shiloheye/ftp_system_lib/context"
 	"github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
@@ -20,15 +20,13 @@ type Loc string
 
 var Logger = &LoggerStruct{
 
-	comm:  make(chan *ftp_context.LogItem, 100),
-	err_c: make(chan error, 100),
+	comm: make(chan *ftp_context.LogItem, 100),
 }
-var ServerConfig = ginserver.ServerConfig
+var ServerConfig = initialiseserver.ServerConfig
 var lock = &sync.Mutex{}
 
 type LoggerStruct struct {
-	comm  chan *ftp_context.LogItem
-	err_c chan error
+	comm chan *ftp_context.LogItem
 }
 
 var log_file = &filehandler.FileBasic{}
@@ -115,7 +113,7 @@ func (ls *LoggerStruct) Logf(loc Loc, str string, v ...any) {
 	}
 }
 
-func (ls *LoggerStruct) LogErr(loc Loc, err error) {
+func (ls *LoggerStruct) LogErr(loc Loc, err error) error {
 	e := &ftp_context.LogItem{
 		Location:  string(loc),
 		Time:      time.Now(),
@@ -124,6 +122,7 @@ func (ls *LoggerStruct) LogErr(loc Loc, err error) {
 		CallStack: []error{err},
 	}
 	ls.Log(e)
+	return e
 }
 
 func (ls *LoggerStruct) Engine(ctx ftp_context.Context) {

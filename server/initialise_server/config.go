@@ -12,6 +12,7 @@ import (
 	initclient "github.com/it-shiloheye/ftp_system_client/init_client"
 
 	"github.com/it-shiloheye/ftp_system_lib/base"
+
 	filehandler "github.com/it-shiloheye/ftp_system_lib/file_handler/v2"
 )
 
@@ -88,14 +89,8 @@ func init() {
 	b, err := os.ReadFile("./config.json")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-
-			tmp, err1 := json.MarshalIndent(ServerConfig, " ", "\t")
-			if err1 != nil {
-				log.Fatalln(err1)
-			}
-			err2 := os.WriteFile("./config.json", tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
-			if err2 != nil {
-				log.Fatalln(err2)
+			if err1 := WriteConfigToFile(); err1 != nil {
+				log.Fatalln("error writing config: ", err1.Error())
 			}
 			log.Fatalln("fill in config")
 			return
@@ -115,9 +110,47 @@ func NewConfigStruct() (svfg *ServerConfigStruct) {
 
 		DirConfig: initclient.DirConfig{
 			Id: uuid.NewString(),
+
+			Path:          "./data/storage",
+			ExcludeDirs:   []string{},
+			ExcluedFile:   []string{},
+			ExcludeRegex:  []string{},
+			FollowSymlink: false,
+			IncludeDir:    []string{"./data/storage"},
+			IncludeExt:    []string{},
+			IncludeFile:   []string{},
+			UpdateRate:    time.Hour,
+			PathSeparator: string(os.PathSeparator),
 		},
 		Clients: []ClientIDStruct{},
 	}
 
 	return
+}
+
+func WriteConfigToFile(i ...int) error {
+	l, err1 := filehandler.Lock("./config.index.lock")
+	if err1 != nil {
+		i_ := 0
+		if len(i) > 0 {
+			i_ = i[0]
+		}
+		if i_ < 5 {
+			<-time.After(time.Second)
+			return WriteConfigToFile(i_ + 1)
+		}
+		return err1
+	}
+	defer l.Unlock()
+
+	tmp, err2 := json.MarshalIndent(ServerConfig, " ", "\t")
+	if err2 != nil {
+		return err2
+	}
+	err3 := os.WriteFile("./config.json", tmp, fs.FileMode(base.S_IRWXU|base.S_IRWXO))
+	if err2 != nil {
+		return err3
+	}
+
+	return nil
 }

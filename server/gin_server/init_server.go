@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+
 	"time"
 
 	initialiseserver "github.com/it-shiloheye/ftp_system/server/initialise_server"
@@ -64,6 +65,18 @@ func init() {
 		log.Printf(`server initialised certs, took: %03dms`, time.Since(start).Milliseconds())
 	}()
 
+	local_ip := net.ParseIP(ServerConfig.LocalIp)
+
+	web_ip := net.ParseIP(ServerConfig.WebIp)
+
+	if web_ip == nil && local_ip == nil {
+
+		if local_ip == nil {
+			log.Fatalln("ServerConfig.LocalIp\ninvalid ip:", ServerConfig.LocalIp)
+		}
+		log.Fatalln("ServerConfig.WebIp\ninvalid ip:", ServerConfig.WebIp)
+	}
+
 	template_cd := ftp_tlshandler.CertData{
 		Organization:  "Shiloh Eye, Ltd",
 		Country:       "KE",
@@ -77,6 +90,8 @@ func init() {
 		IPAddrresses: []net.IP{
 			net.IPv4(127, 0, 0, 1),
 			net.IPv6loopback,
+			local_ip,
+			web_ip,
 		},
 	}
 
@@ -192,69 +207,20 @@ func init() {
 	}
 
 	// simple time guard, update cert every 7 days, server restarts every day at least once
-	latest_creation := ServerConfig.TLS_Cert_Creation
-	current_datetime := time.Now()
+	ServerConfig.TLS_Cert_Creation = time.Now()
 
-	time_diff := current_datetime.Sub(latest_creation)
-	if time_diff.Hours() > (time.Hour.Hours() * 6 * 24) {
-		os.Remove(certs_loc.TLS())
+	// generate new tls each time
+	x509_tls_cert := ftp_tlshandler.ExampleTLSCert(template_cd)
+	tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem, x509_tls_cert)
+	if err3 != nil {
+		log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
+
+			After:   "tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem,x509_tls_cert)",
+			Message: err3.Error(),
+			Err:     true, CallStack: []error{err3},
+		})
 	}
-
-	tls_buf, err2 := os.ReadFile(certs_loc.TLS())
-	if err2 != nil {
-		if !errors.Is(err2, os.ErrNotExist) {
-			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     "tls_buf, err2 := os.ReadFile(certs_loc.TLS()))",
-				Message:   err2.Error(),
-				CallStack: []error{err2},
-			})
-		}
-		x509_tls_cert := ftp_tlshandler.ExampleTLSCert(template_cd)
-		tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem, x509_tls_cert)
-		if err3 != nil {
-			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-
-				After:   "tmp, err3 := ftp_tlshandler.GenerateTLSCert(*certs_loc.caPem,x509_tls_cert)",
-				Message: err3.Error(),
-				Err:     true, CallStack: []error{err3, err2},
-			})
-		}
-		*certs_loc.tlsCert = tmp
-
-		tls_buf_, err4 := json.MarshalIndent(certs_loc.tlsCert, " ", "\t")
-		if err4 != nil {
-			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     `tls_buf_, err4 := json.MarshalIndent(certs_loc.tlsCert," ","\t")`,
-				Message:   err4.Error(),
-				CallStack: []error{err4, err2},
-			})
-		}
-
-		err5 := os.WriteFile(certs_loc.TLS(), tls_buf_, f_mode)
-		if err5 != nil {
-			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     `err5 := os.WriteFile(certs_loc.TLS(),tls_buf_,f_mode)`,
-				Message:   err5.Error(),
-				CallStack: []error{err5, err2},
-			})
-		}
-
-		ServerConfig.TLS_Cert_Creation = time.Now()
-	} else {
-		// I expect to have a tls_buf with the tls_cert data in bytes
-		err3 := json.Unmarshal(tls_buf, certs_loc.tlsCert)
-		if err3 != nil {
-			log.Fatalln(&ftp_context.LogItem{Location: loc, Time: time.Now(),
-				Err:       true,
-				After:     `err3 := json.Unmarshal(ca_buf, certs_loc.tlsCert)`,
-				Message:   err3.Error(),
-				CallStack: []error{err3},
-			})
-		}
-	}
+	*certs_loc.tlsCert = tmp
 
 }
 
@@ -263,7 +229,47 @@ func gin_server_main_thread(ctx ftp_context.Context, server_cert *ftp_tlshandler
 
 	err_c := make(chan ftp_context.LogErr, 1)
 
+	server_ip, ip_net, err1 := net.ParseCIDR("192.168.0.0/24")
+	if err1 != nil {
+		log.Fatalln(&ftp_context.LogItem{
+			Location:  loc,
+			After:     `ip, ip_net, err1  := net.ParseCIDR("192.168.0.0/24")`,
+			Message:   err1.Error(),
+			Err:       true,
+			CallStack: []error{err1},
+		})
+	}
+
+	valid_ip := func(ip string) bool {
+		req_ip := net.ParseIP(ip)
+
+		if req_ip.Equal(server_ip) || net.IPv6loopback.Equal(req_ip) {
+			return true
+		}
+
+		if req_ip.IsLoopback() {
+			return true
+		}
+
+		if ip_net.Contains(req_ip) {
+			return true
+		}
+
+		return false
+	}
+
 	r := gin.Default()
+	r.Use(func(ctx *gin.Context) {
+		req_ip := ctx.RemoteIP()
+
+		if valid_ip(req_ip) {
+
+			ctx.Next()
+			return
+		}
+		ctx.Status(400)
+	})
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
