@@ -1,5 +1,28 @@
 # Commit Notes
 
+### 13th June 2024, 10:05 AM GMT +3
+```txt
+1. Able to read all files in a directory
+2. Able to list loaded files
+3. Saves loaded extensions
+4. Regularly saves progress to file-tree.json
+5. Server successfull receives files from client
+Pending:
+6. Reduce clientside memory use
+    - only read when hashing and uploading (no dangling filehandlers)
+7. Reduce serverside memory use
+    - save directly to disk on upload, retaining only file address and info
+8. Subscribe and download
+    - clientside: 
+        1. send subscriptions to server (to notify on update/changes to directory/files)
+    - serverside: 
+        1. track which clients have which files
+        2. track which clients need which files
+        3. push to clients on change ("/download/changes" route)
+9. Load balancing
+    - simple round robin queue
+```
+
 ### 8th June 2024, 21:27 PM GMT+3
 ```sh
 1. Set up ftp_system/client as depenedency of 
