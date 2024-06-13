@@ -1,5 +1,46 @@
 # Commit Notes
 
+### 13th June 2024, 19:17 PM GMT +3
+```sh
+1. 1st attempt to save files on server
+2. 3 steps:
+    - send file to server
+    - save file server side
+    - respond to confirm or deny presence of file
+3. client-side:
+    - read all files "included"
+    - upload files where necessary
+    - confirm presence of files
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch main
+# Your branch is ahead of 'origin/main' by 3 commits.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	modified:   CommitNotes.md
+#	modified:   client/.air.toml
+#	modified:   client/CommitNotes.md
+#	modified:   client/go.sum
+#	modified:   client/init_client/struct_options.go
+#	modified:   client/main.go
+#	modified:   client/main_thread/dir_handler/file_tree_json.go
+#	modified:   client/main_thread/logging/logging_struct.go
+#	modified:   client/main_thread/main_thread.go
+#	modified:   server/.air.toml
+#	deleted:    server/gin_server/handle_file_uploads.go
+#	deleted:    server/gin_server/tmp_file_hold.go
+#	modified:   server/go.mod
+#	modified:   server/main.go
+#	modified:   server/main_thread/dir_handler/dir_handler_type.go
+#	new file:   server/main_thread/gin_server/handle_file_uploads.go
+#	renamed:    server/gin_server/init_server.go -> server/main_thread/gin_server/init_server.go
+#	modified:   server/main_thread/logging/logging_struct.go
+#	deleted:    server/main_thread/main_thread.go
+#
+```
+
 ### 13th June 2024, 10:05 AM GMT +3
 ```txt
 1. Able to read all files in a directory
@@ -28,7 +69,7 @@ Pending:
     - simple round robin queue
 ```
 
-### 8th June 2024, 21:27 PM GMT+3
+### 08th June 2024, 21:27 PM GMT+3
 ```sh
 1. Set up ftp_system/client as depenedency of 
     server
@@ -66,12 +107,12 @@ Pending:
 
 ```
 
-### 6th June 2024, 21:13 PM GMT+3
+### 06th June 2024, 21:13 PM GMT+3
     1. Fixed all logging errors
     2. Moved std out and file logging to single thread
     3. Need to work on hashing
 
-### 6th June 2024, 19:24 PM GMT+3
+### 06th June 2024, 19:24 PM GMT+3
     1. Adding Logger struct
     2. Adding os.PathSeparator to config and excluded
     3. Improved FileBasic in lib to expose filehandler
