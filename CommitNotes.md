@@ -9,16 +9,21 @@
 5. Server successfull receives files from client
 Pending:
 6. Reduce clientside memory use
-    - only read when hashing and uploading (no dangling filehandlers)
+    - only read when hashing and uploading 
+        (no dangling filehandlers)
 7. Reduce serverside memory use
-    - save directly to disk on upload, retaining only file address and info
+    - save directly to disk on upload, 
+        retaining only file address and info
 8. Subscribe and download
     - clientside: 
-        1. send subscriptions to server (to notify on update/changes to directory/files)
+        1. send subscriptions to server 
+        (to notify on update/changes to 
+            directory/files)
     - serverside: 
         1. track which clients have which files
         2. track which clients need which files
-        3. push to clients on change ("/download/changes" route)
+        3. push to clients on change
+            (eg.: "/download/changes" route)
 9. Load balancing
     - simple round robin queue
 ```

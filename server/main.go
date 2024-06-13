@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	ginserver "github.com/it-shiloheye/ftp_system/server/gin_server"
+	ginserver "github.com/it-shiloheye/ftp_system/server/main_thread/gin_server"
 	initialiseserver "github.com/it-shiloheye/ftp_system/server/initialise_server"
 	"github.com/it-shiloheye/ftp_system_client/main_thread/dir_handler"
 

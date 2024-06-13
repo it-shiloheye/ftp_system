@@ -1,4 +1,4 @@
-package dir_handler
+package server_dirhandler
 
 import (
 	"sync"
@@ -20,14 +20,19 @@ type UploadedFileStruct struct {
 type FileStorageStruct struct {
 	// store file_hash data
 	FileMetaData ftp_base.MutexedMap[*filehandler.FileHash] `json:"files_metadata"`
-	// store client id data
+	// store files uploaded by client
 	ClientData ftp_base.MutexedMap[*UploadedFileStruct] `json:"client_data"`
+	// uploadedhash
+	UploadedHashes ftp_base.MutexedMap[string] `json:"uploaded_hashes"`
 }
 
 func NewFileStorageStruct() *FileStorageStruct {
 	lock_fs.Lock()
 	return &FileStorageStruct{
-		FileMetaData: ftp_base.NewMutexedMap[*filehandler.FileHash](),
-		ClientData:   ftp_base.NewMutexedMap[*UploadedFileStruct](),
+		FileMetaData:   ftp_base.NewMutexedMap[*filehandler.FileHash](),
+		ClientData:     ftp_base.NewMutexedMap[*UploadedFileStruct](),
+		UploadedHashes: ftp_base.NewMutexedMap[string](),
 	}
 }
+
+var TmpFileData = ftp_base.NewMutexedMap[[]byte]()
