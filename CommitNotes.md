@@ -1,5 +1,74 @@
 # Commit Notes
 
+### 06th June 2024, 22:00 PM GMT +3
+```sh
+setting up parent repository
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch main
+# Your branch is up to date with 'origin/main'.
+#
+# Changes to be committed:
+#	modified:   .gitignore
+#	modified:   CommitNotes.md
+#	deleted:    client/.air.toml
+#	deleted:    client/.gitignore
+#	deleted:    client/CommitNotes.md
+#	deleted:    client/LICENSE
+#	deleted:    client/README.md
+#	deleted:    client/client_config.schema.json
+#	deleted:    client/go.mod
+#	deleted:    client/go.sum
+#	deleted:    client/init_client/config.go
+#	deleted:    client/init_client/struct_options.go
+#	deleted:    client/main.go
+#	deleted:    client/main_thread/dir_handler/file_tree_json.go
+#	deleted:    client/main_thread/dir_handler/read_files_in_directory.go
+#	deleted:    client/main_thread/init.go
+#	deleted:    client/main_thread/main_thread.go
+#	deleted:    client/main_thread/network_client/init.go
+#	deleted:    client/main_thread/network_client/network_client.go
+#	deleted:    client/main_thread/network_client/network_engine.go
+#	deleted:    client/main_thread/utils.go
+#	deleted:    lib
+#	deleted:    server/main_thread/gin_server/file_upload_routes.go
+#	deleted:    server/remove-item.ps1
+#	deleted:    utils/.air.toml
+#	deleted:    utils/.gitignore
+#	deleted:    utils/main.go
+#	new file:   v1/.gitignore
+#	new file:   v1/CommitNotes.md
+#	renamed:    LICENSE -> v1/LICENSE
+#	new file:   v1/client
+#	renamed:    dev_kill_script.ps1 -> v1/dev_kill_script.ps1
+#	renamed:    dev_script.ps1 -> v1/dev_script.ps1
+#	new file:   v1/lib
+#	renamed:    server/.air.toml -> v1/server/.air.toml
+#	renamed:    server/.gitignore -> v1/server/.gitignore
+#	renamed:    server/config.schema -> v1/server/config.schema
+#	renamed:    server/go.mod -> v1/server/go.mod
+#	renamed:    server/go.sum -> v1/server/go.sum
+#	renamed:    server/initialise_server/config.go -> v1/server/initialise_server/config.go
+#	renamed:    server/main.go -> v1/server/main.go
+#	renamed:    server/main_thread/actions/file_operations.go -> v1/server/main_thread/actions/file_operations.go
+#	renamed:    server/main_thread/dir_handler/dir_handler_type.go -> v1/server/main_thread/dir_handler/dir_handler_type.go
+#	renamed:    server/main_thread/dir_handler/utils.go -> v1/server/main_thread/dir_handler/utils.go
+#	new file:   v1/server/main_thread/gin_server/file_upload_routes.go
+#	renamed:    server/main_thread/gin_server/init_server.go -> v1/server/main_thread/gin_server/init_server.go
+#	renamed:    server/main_thread/gin_server/register_routes.go -> v1/server/main_thread/gin_server/register_routes.go
+#	renamed:    server/main_thread/gin_server/utils_func.go -> v1/server/main_thread/gin_server/utils_func.go
+#	renamed:    server/main_thread/init.go -> v1/server/main_thread/init.go
+#	renamed:    client/remove-item.ps1 -> v1/server/remove-item.ps1
+#	new file:   v2
+#	new file:   v3
+#
+# Changes not staged for commit:
+#	modified:   v1/client (modified content)
+#	modified:   v1/lib (modified content)
+#
+```
+
 ### 19th June 2024, 12:51 PM GMT +3
 ```sh
 1. Uploading files to server
