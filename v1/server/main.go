@@ -32,7 +32,7 @@ func main() {
 	go WriteConfig(ctx.Add())
 	go Logger.Engine(ctx.Add(), data_dir)
 	go ginserver.StoreUploadedFiles(ctx.Add(), data_dir)
-	go ginserver.UpdateClientFileTree(ctx.Add(), data_dir)
+
 	defer ctx.Wait()
 	ginserver.NewServer(ctx)
 }

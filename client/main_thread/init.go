@@ -1,5 +1,0 @@
-package mainthread
-
-func init() {
-
-}
