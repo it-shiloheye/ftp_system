@@ -1,0 +1,1 @@
+Get-ChildItem * -Include *.lock,data,*.exe -Exclude node_modules -Recurse | Remove-Item

@@ -1,0 +1,1 @@
+Get-ChildItem * -Include file_map.json -Recurse | Remove-Item
