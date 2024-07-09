@@ -39,7 +39,7 @@ func (dbp *DBPoolStruct) PopulateConns(ctx ftp_context.Context, i int) {
 		dbp.conns = make(chan *pgx.Conn, i+1)
 	} else {
 		var tmp chan *pgx.Conn
-		tmp, dbp.conns = dbp.conns, make(chan *pgx.Conn, len(dbp.conns)+i)
+		tmp, dbp.conns = dbp.conns, make(chan *pgx.Conn, int(dbp.count.Load())+i)
 		dbp.conns = tmp
 	}
 	for ; i > 0; i -= 1 {
@@ -91,8 +91,10 @@ func init() {
 }
 
 func ConnectToDB(ctx ftp_context.Context) {
+	if DBPool == nil {
 
-	DBPool = &DBPoolStruct{}
+		DBPool = &DBPoolStruct{}
+	}
 
 	DBPool.PopulateConns(ctx, 10)
 

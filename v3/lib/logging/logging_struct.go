@@ -21,19 +21,21 @@ const fs_mode = fs.FileMode(base.S_IRWXU | base.S_IRWXO)
 
 var Logger = &LoggerStruct{
 
-	log_file:       &filehandler.FileBasic{},
-	log_err_file:   &filehandler.FileBasic{},
-	log_today_file: &filehandler.FileBasic{},
-	comm:           make(chan *log_item.LogItem, 100),
+	log_file:           &filehandler.FileBasic{},
+	log_err_file:       &filehandler.FileBasic{},
+	log_today_file:     &filehandler.FileBasic{},
+	log_today_err_file: &filehandler.FileBasic{},
+	comm:               make(chan *log_item.LogItem, 100),
 }
 
 var lock = &sync.Mutex{}
 
 type LoggerStruct struct {
-	comm           chan *log_item.LogItem
-	log_file       *filehandler.FileBasic
-	log_err_file   *filehandler.FileBasic
-	log_today_file *filehandler.FileBasic
+	comm               chan *log_item.LogItem
+	log_file           *filehandler.FileBasic
+	log_err_file       *filehandler.FileBasic
+	log_today_file     *filehandler.FileBasic
+	log_today_err_file *filehandler.FileBasic
 }
 
 func InitialiseLogging(logging_dir string) {
@@ -44,10 +46,11 @@ func InitialiseLogging(logging_dir string) {
 	log_file_p := logging_dir + "/logs/log_file.txt"
 	log_err_file_p := logging_dir + "/logs/log_err_file.txt"
 	log_today_file_p := logging_dir + "/logs/sess/" + log_file_name() + ".txt"
+	log_today_err_file_p := logging_dir + "/logs/sess/" + log_file_name() + "_err.txt"
 
 	log.Printf("%s\nlog_file_p: %s\nlog_err_file_p: %s\n", loc, log_file_p, log_err_file_p)
 	// os.Exit(1)
-	var err1, err2, err3, err4 error
+	var err1, err2, err3, err4, err5 error
 
 	err1 = os.MkdirAll(logging_dir+"/logs/sess", fs.FileMode(base.S_IRWXO|base.S_IRWXU))
 	if !errors.Is(err1, os.ErrExist) && err1 != nil {
@@ -60,7 +63,7 @@ func InitialiseLogging(logging_dir string) {
 		log.Fatalln(a)
 	}
 
-	Logger.log_file.File, err2 = base.OpenFile(log_file_p, os.O_APPEND|os.O_RDWR|os.O_CREATE)
+	Logger.log_file, err2 = filehandler.Create(log_file_p)
 	if err2 != nil {
 		b := &log_item.LogItem{
 			Location: loc,
@@ -72,7 +75,7 @@ func InitialiseLogging(logging_dir string) {
 		log.Fatalln(b)
 	}
 
-	Logger.log_err_file.File, err3 = base.OpenFile(log_err_file_p, os.O_APPEND|os.O_RDWR|os.O_CREATE)
+	Logger.log_err_file, err3 = filehandler.Create(log_err_file_p)
 	if err3 != nil {
 		c := &log_item.LogItem{
 			Location:  loc,
@@ -84,7 +87,7 @@ func InitialiseLogging(logging_dir string) {
 		log.Fatalln(c)
 	}
 
-	Logger.log_today_file, err4 = filehandler.Create(log_today_file_p)
+	Logger.log_today_file.File, err4 = base.OpenFile(log_today_file_p, os.O_APPEND|os.O_RDWR|os.O_CREATE)
 	if err4 != nil {
 		c := &log_item.LogItem{
 			Location:  loc,
@@ -92,6 +95,18 @@ func InitialiseLogging(logging_dir string) {
 			Message:   err4.Error(),
 			Level:     log_item.LogLevelError02,
 			CallStack: []error{err4},
+		}
+		log.Fatalln(c)
+	}
+
+	Logger.log_today_err_file.File, err5 = base.OpenFile(log_today_err_file_p, os.O_APPEND|os.O_RDWR|os.O_CREATE)
+	if err5 != nil {
+		c := &log_item.LogItem{
+			Location:  loc,
+			Time:      time.Now(),
+			Message:   err5.Error(),
+			Level:     log_item.LogLevelError02,
+			CallStack: []error{err5},
 		}
 		log.Fatalln(c)
 	}
@@ -191,7 +206,10 @@ func (ls *LoggerStruct) Engine(ctx ftp_context.Context, logging_dir string) {
 
 		if len(err_txt) > 0 {
 			log.SetOutput(ls.log_err_file)
-			log.Print(log_txt)
+			log.Print(err_txt)
+
+			log.SetOutput(ls.log_today_err_file)
+			log.Print(err_txt)
 
 		}
 

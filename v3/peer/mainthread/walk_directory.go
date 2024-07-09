@@ -2,7 +2,6 @@ package mainthread
 
 import (
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -100,7 +99,7 @@ func WalkDir(storage_path string, files_map *FileMapType, watcher *fsnotify.Watc
 			return Logger.LogErr(loc, err3)
 		}
 
-		log.Println("found: ", fpath)
+		// log.Println("found: ", fpath)
 		f_stored, ok := file_map.Get(fpath)
 
 		if !ok {

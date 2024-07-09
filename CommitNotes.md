@@ -1,5 +1,170 @@
 # Commit Notes
 
+### 06th June 2024, 22:18 PM GMT +3 
+```sh
+1. Set up v2 and v3 as part of main repo
+2. Able to automatically upload and download file_basic
+3. Will need to improve UI
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch main
+# Your branch is ahead of 'origin/main' by 1 commit.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	modified:   .gitignore
+#	deleted:    v2
+#	new file:   v2/.gitignore
+#	new file:   v2/CommitNotes.md
+#	new file:   v2/LICENSE
+#	new file:   v2/README.md
+#	new file:   v2/client/.eslintrc.cjs
+#	new file:   v2/client/.gitignore
+#	new file:   v2/client/README.md
+#	new file:   v2/client/index.html
+#	new file:   v2/client/public/vite.svg
+#	new file:   v2/client/src/App.css
+#	new file:   v2/client/src/App.tsx
+#	new file:   v2/client/src/assets/react.svg
+#	new file:   v2/client/src/index.css
+#	new file:   v2/client/src/main.tsx
+#	new file:   v2/client/src/vite-env.d.ts
+#	new file:   v2/client/vite.config.ts
+#	new file:   v2/dev_kill_script.ps1
+#	new file:   v2/dev_script.ps1
+#	new file:   v2/go.mod
+#	new file:   v2/go.sum
+#	new file:   v2/init.example.sql
+#	new file:   v2/lib/.air.toml
+#	new file:   v2/lib/.gitignore
+#	new file:   v2/lib/base/atomic_json.go
+#	new file:   v2/lib/base/base.go
+#	new file:   v2/lib/base/init.go
+#	new file:   v2/lib/base/ip_handling.go
+#	new file:   v2/lib/base/mutexed_map.go
+#	new file:   v2/lib/base/mutexed_queue.go
+#	new file:   v2/lib/context/context.go
+#	new file:   v2/lib/db_access/db_main.go
+#	new file:   v2/lib/db_access/generated/batch.go
+#	new file:   v2/lib/db_access/generated/client_queries.sql.go
+#	new file:   v2/lib/db_access/generated/db.go
+#	new file:   v2/lib/db_access/generated/models.go
+#	new file:   v2/lib/db_access/generated/peer_queries.sql.go
+#	new file:   v2/lib/db_access/sql/queries/peer_queries.sql
+#	new file:   v2/lib/db_access/sql/schema/peer_tables.sql
+#	new file:   v2/lib/file_handler/v2/bytes_store.go
+#	new file:   v2/lib/file_handler/v2/file_basic.go
+#	new file:   v2/lib/file_handler/v2/file_hash.go
+#	new file:   v2/lib/file_handler/v2/lock_file.go
+#	new file:   v2/lib/logging/fake_logger.go
+#	new file:   v2/lib/logging/log_item/error_type.go
+#	new file:   v2/lib/logging/logging_struct.go
+#	new file:   v2/lib/network_client/network_client.go
+#	new file:   v2/lib/network_client/network_engine.go
+#	new file:   v2/lib/sqlc.yaml
+#	new file:   v2/lib/tls_handler/v2/cert_data.go
+#	new file:   v2/lib/tls_handler/v2/cert_handler_2.go
+#	new file:   v2/peer/.air.toml
+#	new file:   v2/peer/browser-server/browser_server.go
+#	new file:   v2/peer/config/config.go
+#	new file:   v2/peer/config/data_storage_struct.go
+#	new file:   v2/peer/main.go
+#	new file:   v2/peer/main_thread/db_access/db_helpers.go
+#	new file:   v2/peer/main_thread/main_thread.go
+#	new file:   v2/peer/main_thread/storage_struct.go
+#	new file:   v2/peer/main_thread/walk_dir.go
+#	new file:   v2/peer/network-peer/network_peer.go
+#	new file:   v2/peer/remove-item.ps1
+#	new file:   v2/peer/server/init_server.go
+#	new file:   v2/peer/server/server_loop.go
+#	new file:   v2/peer/server/server_type.go
+#	new file:   v2/plan.md
+#	new file:   v2/postgres.bat
+#	deleted:    v3
+#	new file:   v3/.gitignore
+#	new file:   v3/CommitNotes.md
+#	new file:   v3/LICENSE
+#	new file:   v3/client/.gitignore
+#	new file:   v3/client/README.md
+#	new file:   v3/client/index.html
+#	new file:   v3/client/public/vite.svg
+#	new file:   v3/client/src/App.css
+#	new file:   v3/client/src/App.tsx
+#	new file:   v3/client/src/assets/react.svg
+#	new file:   v3/client/src/index.css
+#	new file:   v3/client/src/main.tsx
+#	new file:   v3/client/src/routeTree.gen.ts
+#	new file:   v3/client/src/routes/index.tsx
+#	new file:   v3/client/src/vite-env.d.ts
+#	new file:   v3/client/tailwind.config.js
+#	new file:   v3/client/vite.config.ts
+#	new file:   v3/go.mod
+#	new file:   v3/go.sum
+#	new file:   v3/lib/.air.toml
+#	new file:   v3/lib/.gitignore
+#	new file:   v3/lib/base/atomic_json.go
+#	new file:   v3/lib/base/base.go
+#	new file:   v3/lib/base/init.go
+#	new file:   v3/lib/base/ip_handling.go
+#	new file:   v3/lib/base/mutexed_map.go
+#	new file:   v3/lib/context/context.go
+#	new file:   v3/lib/db_access/db_main.go
+#	new file:   v3/lib/db_access/generated/db.go
+#	new file:   v3/lib/db_access/generated/download_queries.sql.go
+#	new file:   v3/lib/db_access/generated/models.go
+#	new file:   v3/lib/db_access/generated/peer_queries.sql.go
+#	new file:   v3/lib/db_access/generated/store_queries.sql.go
+#	new file:   v3/lib/db_access/generated/upload_queries.sql.go
+#	new file:   v3/lib/db_access/sql/peer_schema.sql
+#	new file:   v3/lib/db_access/sql/queries/download_queries.sql
+#	new file:   v3/lib/db_access/sql/queries/peer_queries.sql
+#	new file:   v3/lib/db_access/sql/queries/store_queries.sql
+#	new file:   v3/lib/db_access/sql/queries/upload_queries.sql
+#	new file:   v3/lib/file_handler/v2/bytes_store.go
+#	new file:   v3/lib/file_handler/v2/file_basic.go
+#	new file:   v3/lib/file_handler/v2/file_hash.go
+#	new file:   v3/lib/file_handler/v2/lock_file.go
+#	new file:   v3/lib/logging/fake_logger.go
+#	new file:   v3/lib/logging/log_item/error_type.go
+#	new file:   v3/lib/logging/logging_struct.go
+#	new file:   v3/lib/network_client/network_client.go
+#	new file:   v3/lib/network_client/network_engine.go
+#	new file:   v3/lib/sqlc.yaml
+#	new file:   v3/lib/tls_handler/v2/cert_data.go
+#	new file:   v3/lib/tls_handler/v2/cert_handler_2.go
+#	new file:   v3/peer/.air.toml
+#	new file:   v3/peer/build_and_run.ps1
+#	new file:   v3/peer/config/config.go
+#	new file:   v3/peer/config/data_storage_struct.go
+#	new file:   v3/peer/main.go
+#	new file:   v3/peer/mainthread/db_helpers/connect_to_db.go
+#	new file:   v3/peer/mainthread/db_helpers/upload.go
+#	new file:   v3/peer/mainthread/download_file.go
+#	new file:   v3/peer/mainthread/file_map_type.go
+#	new file:   v3/peer/mainthread/loop.go
+#	new file:   v3/peer/mainthread/upload_file.go
+#	new file:   v3/peer/mainthread/walk_directory.go
+#	new file:   v3/peer/network-peer/network_peer.go
+#	new file:   v3/peer/remove-item.ps1
+#	new file:   v3/peer/server/init_server.go
+#	new file:   v3/peer/server/server_loop.go
+#	new file:   v3/peer/server/server_type.go
+#	new file:   v3/plan.md
+#	new file:   v3/scripts/dev_kill_script.ps1
+#	new file:   v3/scripts/dev_script.ps1
+#	new file:   v3/scripts/remove_executables.ps1
+#	new file:   v3/scripts/remove_filemap_json.ps1
+#	new file:   v3/scripts/remove_locks.ps1
+#	new file:   v3/scripts/test_storage.ps1
+#	new file:   v3/test.ps1
+#
+# Changes not staged for commit:
+#	modified:   v1/client (modified content)
+#	modified:   v1/lib (modified content)
+#
+```
+
 ### 06th June 2024, 22:00 PM GMT +3
 ```sh
 setting up parent repository

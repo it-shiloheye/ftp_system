@@ -118,3 +118,25 @@ func (l *FakeLogger) SetOutput(w io.Writer) {
 func (l *FakeLogger) SetPrefix(prefix string) {
 	l.prefix.Store(&prefix)
 }
+
+func RecoverFunc(after *string, loc log_item.Loc) {
+	recover_func(after, loc)
+}
+
+func recover_func(after *string, loc log_item.Loc) {
+	if r := recover(); r != nil {
+		if err, ok := r.(error); ok {
+			Logger.LogErr(loc, &log_item.LogItem{
+				After:     *after,
+				Message:   err.Error(),
+				CallStack: []error{err},
+			})
+		} else {
+			Logger.LogErr(loc, fmt.Errorf("panic after: %s", *after))
+		}
+		fmt.Println("==================================================")
+		fmt.Println("===================recovering=====================")
+		fmt.Println("==================================================")
+
+	}
+}

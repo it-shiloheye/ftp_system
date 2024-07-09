@@ -49,7 +49,7 @@ func NewStorageStruct() (sts *StorageStruct) {
 	sts = &StorageStruct{
 
 		PeerRole:    db_access.PeerRoleTypeClient,
-		ExcludeDirs: []string{".git", "tmp", "~"},
+		ExcludeDirs: []string{".git", "tmp", "~", "node_modules", "$"},
 
 		ExcludeRegex:        []string{},
 		IncludeRegex:        []string{},
@@ -126,7 +126,7 @@ mainloop:
 			continue
 		}
 
-		has_storage_dir := len(sts.StorageDirectory) > 0
+		has_storage_dir := len(sts.StorageDirectory) > 5
 		has_upload_dirs := len(sts.UploadDirs.UploadDirs) > 0
 		if has_storage_dir {
 
@@ -142,7 +142,7 @@ mainloop:
 
 		if has_upload_dirs {
 			for _, dir_path := range sts.UploadDirs.UploadDirs {
-				if len(dir_path) < 1 {
+				if len(dir_path) < 5 {
 					continue
 				}
 				_, err3 := os.ReadDir(dir_path)

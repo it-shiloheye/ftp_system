@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	ftp_base "github.com/it-shiloheye/ftp_system/v3/lib/base"
+	"github.com/it-shiloheye/ftp_system/v3/peer/mainthread/db_helpers"
 
 	ftp_context "github.com/it-shiloheye/ftp_system/v3/lib/context"
 	db "github.com/it-shiloheye/ftp_system/v3/lib/db_access"
@@ -61,7 +62,7 @@ func ClientDownloadFunc(ctx ftp_context.Context, files_map *FileMapType) (err er
 	defer db.DBPool.Return(db_conn)
 
 	if err1 != nil {
-		if strings.Contains(err1.Error(), "no rows in result set") {
+		if db_helpers.CheckNoRowsInResultSet(err1) {
 			log.Println("no rows in result set")
 			return nil
 		}

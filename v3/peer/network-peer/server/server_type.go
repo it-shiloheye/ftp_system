@@ -16,7 +16,8 @@ import (
 var Logger = logging.Logger
 
 type ServerType struct {
-	Port string `json:"port"`
+	Port          string `json:"port"`
+	LocalHostOnly bool
 
 	HttpsServer *http.Server
 	*gin.Engine
@@ -44,12 +45,17 @@ func (st *ServerType) InitServer(server_cert *ftp_tlshandler.TLSCert, srv_name s
 
 	r.Use(func(ctx *gin.Context) {
 		req_ip := ctx.RemoteIP()
-
-		if valid_ip(req_ip, ip_net, server_ip) {
-
+		req_ip_ip := net.ParseIP(req_ip)
+		if req_ip_ip.Equal(server_ip) || net.IPv6loopback.Equal(req_ip_ip) || req_ip_ip.IsLoopback() {
 			ctx.Next()
 			return
 		}
+
+		if !st.LocalHostOnly && ip_net.Contains(req_ip_ip) {
+			ctx.Next()
+			return
+		}
+
 		ctx.Status(400)
 	})
 
@@ -63,7 +69,7 @@ func (st *ServerType) InitServer(server_cert *ftp_tlshandler.TLSCert, srv_name s
 		Addr:              st.Port,
 		Handler:           r,
 		ReadHeaderTimeout: time.Millisecond,
-		ReadTimeout:       time.Minute * 5,
+		ReadTimeout:       time.Minute,
 	}
 	if server_cert != nil {
 		st.HttpsServer.TLSConfig = ftp_tlshandler.ServerTLSConf(server_cert.TlsCert)
@@ -92,22 +98,4 @@ func (st *ServerType) InitServer(server_cert *ftp_tlshandler.TLSCert, srv_name s
 		}
 	}
 
-}
-
-func valid_ip(ip string, ip_net *net.IPNet, server_ip net.IP) bool {
-	req_ip := net.ParseIP(ip)
-
-	if req_ip.Equal(server_ip) || net.IPv6loopback.Equal(req_ip) {
-		return true
-	}
-
-	if req_ip.IsLoopback() {
-		return true
-	}
-
-	if ip_net.Contains(req_ip) {
-		return true
-	}
-
-	return false
 }

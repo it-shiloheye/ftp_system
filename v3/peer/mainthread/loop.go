@@ -178,19 +178,5 @@ func SetUpCurrentWatcher(files_map *FileMapType) (wc *fsnotify.Watcher) {
 }
 
 func recover_func(after *string, loc log_item.Loc) {
-	if r := recover(); r != nil {
-		if err, ok := r.(error); ok {
-			Logger.LogErr(loc, &log_item.LogItem{
-				After:     *after,
-				Message:   err.Error(),
-				CallStack: []error{err},
-			})
-		} else {
-			Logger.LogErr(loc, fmt.Errorf("panic after: %s", *after))
-		}
-		fmt.Sprintln("==================================================")
-		fmt.Sprintln("===================recovering=====================")
-		fmt.Sprintln("==================================================")
-
-	}
+	logging.RecoverFunc(after, loc)
 }

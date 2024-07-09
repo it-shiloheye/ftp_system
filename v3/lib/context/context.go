@@ -164,10 +164,11 @@ func (ctx *ContextStruct) Add() Context {
 	return ctx
 }
 
-// does not unblock on cancel
-func (ctx *ContextStruct) Wait() {
+// waits for all goroutines to return and cancel to be called
+func (ctx *ContextStruct) Wait() <-chan struct{} {
 	ctx.wg.Wait()
-	ctx.Cancel() // close any process that have not returned
+
+	return ctx.cancel_c // close any process that have not returned
 }
 
 // marks goroutine as finished

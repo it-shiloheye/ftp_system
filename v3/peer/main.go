@@ -12,6 +12,7 @@ import (
 	server_config "github.com/it-shiloheye/ftp_system/v3/peer/config"
 	"github.com/it-shiloheye/ftp_system/v3/peer/mainthread"
 	"github.com/it-shiloheye/ftp_system/v3/peer/mainthread/db_helpers"
+	// networkpeer "github.com/it-shiloheye/ftp_system/v3/peer/network-peer"
 )
 
 var Logger = logging.Logger
@@ -21,6 +22,8 @@ func main() {
 	loc := log_item.Loc(`main()`)
 	log.Println("this is a test")
 
+	_ = loc
+
 	ctx := ftp_context.CreateNewContext()
 
 	logging.InitialiseLogging(".")
@@ -28,6 +31,26 @@ func main() {
 	db.ConnectToDB(ctx)
 
 	server_config.LoopReadStorageStruct(3, storage_struct)
+	connect_db_client(ctx, storage_struct)
+	go mainthread.PermanentUploadLoop(ctx.Add())
+
+	go mainthread.Loop(ctx.Add())
+
+	for ok := true; ok; {
+		err_c := make(chan error) //networkpeer.CreateBrowserServer(ctx)
+
+		select {
+		case _, ok = <-ctx.Done():
+		case err := <-err_c:
+			Logger.LogErr(loc, err)
+
+		}
+	}
+	ctx.Wait()
+}
+
+func connect_db_client(ctx ftp_context.Context, storage_struct *server_config.StorageStruct) {
+	loc := log_item.Loc(`func connect_client(ctx ftp_context.Context, storage_struct *server_config.StorageStruct)`)
 	for {
 		err1 := db_helpers.ConnectClient(ctx, storage_struct)
 		if err1 != nil {
@@ -42,9 +65,4 @@ func main() {
 			break
 		}
 	}
-
-	go mainthread.PermanentUploadLoop(ctx.Add())
-
-	go mainthread.Loop(ctx.Add())
-	ctx.Wait()
 }
