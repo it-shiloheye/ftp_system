@@ -26,7 +26,7 @@ type DBPoolStruct struct {
 	conns chan *pgx.Conn
 	count atomic.Int32
 
-	retry_chan chan int
+	retry_chan chan *pgx.Conn
 }
 
 func (dbp *DBPoolStruct) Len() int {
@@ -47,7 +47,7 @@ func (dbp *DBPoolStruct) GetConn(ctx ftp_context.Context) *pgx.Conn {
 		})
 		pc, err1 = dbp.retry_connections(ctx, 3)
 		if err1 != nil {
-			dbp.SignalConnLost()
+			go dbp.SignalConnLost(pc)
 			panic(Logger.LogErr(loc, err1))
 		}
 		return pc
@@ -68,7 +68,7 @@ func (dbp *DBPoolStruct) Return(pc *pgx.Conn, ctx ftp_context.Context) {
 		pc, err1 = dbp.retry_connections(ctx, 3)
 		if err1 != nil {
 			Logger.LogErr(loc, err1)
-			dbp.SignalConnLost()
+			go dbp.SignalConnLost(pc)
 			return
 		}
 
@@ -201,13 +201,14 @@ func ConnectToDB(ctx ftp_context.Context) {
 
 func NewDBPool() (dbp *DBPoolStruct) {
 	dbp = &DBPoolStruct{
-		retry_chan: make(chan int),
+		retry_chan: make(chan *pgx.Conn),
 	}
 
 	go func() {
 		for range dbp.retry_chan {
 			pc, err1 := dbp.retry_connections(ftp_context.CreateNewContext())
 			if err1 != nil {
+				Logger.LogErr(log_item.Locf("retrying connection"), err1)
 				return
 			}
 
@@ -218,7 +219,7 @@ func NewDBPool() (dbp *DBPoolStruct) {
 
 	return
 }
-func (dbp *DBPoolStruct) SignalConnLost() {
+func (dbp *DBPoolStruct) SignalConnLost(pc *pgx.Conn) {
 
-	dbp.retry_chan <- 1
+	dbp.retry_chan <- pc
 }

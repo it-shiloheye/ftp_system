@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 
@@ -277,14 +277,13 @@ func (fp *FileHashPool) ReturnByteStore(fb *filehandler.BytesStore) {
 
 func (fi *FileItem) CheckExists() bool {
 	_, err1 := os.Stat(fi.Path)
-	return errors.Is(err1, os.ErrExist)
+	return err1 != nil && errors.Is(err1, os.ErrNotExist)
 }
 
 func (fi *FileItem) CheckHash(file_hash string) (match bool, err error) {
 	loc := log_item.Loc(`func (fi *FileItem) CheckHash(file_hash string) (match bool, err error)`)
 	bs := file_hash_pool.GetByteStore()
 	defer file_hash_pool.ReturnByteStore(bs)
-	_ = loc
 
 	d, err1 := os.ReadFile(fi.Path)
 	if err1 != nil {

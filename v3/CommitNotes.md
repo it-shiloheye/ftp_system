@@ -1,5 +1,38 @@
 # Commit Notes
 
+### 10th June 2024, 10:00 AM GMT +3
+```sh
+1. Able to read directories and list files
+2. Able to upload files to database
+3. Successfully reconnects on loss of connection
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch main
+# Your branch is up to date with 'origin/main'.
+#
+# Changes to be committed:
+#	modified:   v3/CommitNotes.md
+#	modified:   v3/lib/db_access/db_main.go
+#	modified:   v3/lib/db_access/generated/upload_queries.sql.go
+#	modified:   v3/lib/db_access/sql/queries/upload_queries.sql
+#	modified:   v3/lib/logging/fake_logger.go
+#	modified:   v3/peer/main.go
+#	modified:   v3/peer/mainthread/db_helpers/connect_to_db.go
+#	modified:   v3/peer/mainthread/download_file.go
+#	modified:   v3/peer/mainthread/loop.go
+#	modified:   v3/peer/mainthread/upload_file.go
+#	modified:   v3/peer/mainthread/walk_directory.go
+#	modified:   v3/peer/network-peer/api/list_files.go
+#	modified:   v3/scripts/remove_executables.ps1
+#	modified:   v3/scripts/test_storage.ps1
+#
+# Changes not staged for commit:
+#	modified:   v1/client (modified content)
+#	modified:   v1/lib (modified content)
+#
+```
+
 ### 09th July 2024, 10:10 AM GMT +3
 ```sh
 1. Able to create a properly named build
