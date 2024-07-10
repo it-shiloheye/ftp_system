@@ -128,7 +128,7 @@ func recover_func(after *string, loc log_item.Loc) {
 		if err, ok := r.(error); ok {
 			Logger.LogErr(loc, &log_item.LogItem{
 				After:     *after,
-				Message:   err.Error(),
+				Message:   fmt.Sprintf("panic after:\n%s", err.Error()),
 				CallStack: []error{err},
 			})
 		} else {

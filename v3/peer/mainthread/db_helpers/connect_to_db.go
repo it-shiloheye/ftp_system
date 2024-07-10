@@ -1,7 +1,6 @@
 package db_helpers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -29,20 +28,15 @@ func ConnectClient(ctx ftp_context.Context, StorageStruct *server_config.Storage
 	loc := log_item.Loc(`ConnectClient(ctx ftp_context.Context) error`)
 	var err1, err3, err4, err5, err6, err7 error
 	var db_peers []*db_access.PeersTable
-	if db.DBPool.Len() < 10 {
-		// log.Println("connect client checking length")
-		db.DBPool.PopulateConns(ctx.Add(), 10)
-		ctx.Finished()
-	}
 
-	db_conn := db.DBPool.GetConn()
-	defer db.DBPool.Return(db_conn)
+	db_conn := db.DBPool.GetConn(ctx)
+	defer db.DBPool.Return(db_conn, ctx)
 	defer server_config.WriteToDisk(StorageStruct)
 
 	ip_addr := ServerConfig.LocalIp()
 
 	ticker(loc, 1, "connecting client to peer_table")
-	db_peers, err1 = DB.ConnectClient(context.TODO(), db_conn, StorageStruct.PeerId)
+	db_peers, err1 = DB.ConnectClient(ctx, db_conn, StorageStruct.PeerId)
 	if err1 != nil {
 		return Logger.LogErr(loc, err1)
 	}

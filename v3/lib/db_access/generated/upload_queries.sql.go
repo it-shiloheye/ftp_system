@@ -12,6 +12,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkChangesStepOne = `-- name: CheckChangesStepOne :exec
+SELECT DISTINCT file_metadata.file_path, file_metadata.file_data_id, file_data.file_hash,file_metadata.mod_time FROM file_metadata
+JOIN file_data ON file_metadata.file_data_id = file_data.id
+ORDER BY
+    file_metadata.file_data_id DESC,
+    file_metadata.mod_time DESC
+`
+
+// CheckChangesStepOne
+//
+//	SELECT DISTINCT file_metadata.file_path, file_metadata.file_data_id, file_data.file_hash,file_metadata.mod_time FROM file_metadata
+//	JOIN file_data ON file_metadata.file_data_id = file_data.id
+//	ORDER BY
+//	    file_metadata.file_data_id DESC,
+//	    file_metadata.mod_time DESC
+func (q *Queries) CheckChangesStepOne(ctx context.Context, db DBTX) error {
+	_, err := db.Exec(ctx, checkChangesStepOne)
+	return err
+}
+
 const updateFileTrackerMarkUploaded = `-- name: UpdateFileTrackerMarkUploaded :exec
 INSERT INTO file_tracker (
     peer_id,

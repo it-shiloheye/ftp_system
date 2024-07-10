@@ -47,19 +47,21 @@ func log_error_file_path(file_i *FileItem, loc log_item.Loc, err error) {
 	log.Printf(file_path_err, file_i.Path)
 }
 
-func ClientDownloadFunc(ctx ftp_context.Context, files_map *FileMapType) (err error) {
+func ClientDownloadFunc(p_ctx ftp_context.Context, files_map *FileMapType) (err error) {
 	loc := log_item.Loc(`ClientDownloadFunc(ctx ftp_context.Context, files_map *FileMapType) (err error)`)
 	log.Println(`ClientDownloadFunc(ctx ftp_context.Context, files_map *FileMapType) (err error)`)
+	ctx := ftp_context.CreateNewContextWithParent(p_ctx)
 	after := "setup"
 	defer recover_func(&after, loc)
+	defer ctx.Wait()
 	if has_deadline, near_deadline := ctx.NearDeadline(time.Second); has_deadline && near_deadline {
 		return nil
 	}
 	file_map := (files_map.FileMap)
-	db_conn := db.DBPool.GetConn()
+	db_conn := db.DBPool.GetConn(ctx)
 	after = "db_files_list, err1 := DB.GetFilesList(ctx, db_conn)"
 	db_files_list, err1 := DB.GetFilesList(ctx, db_conn)
-	defer db.DBPool.Return(db_conn)
+	db.DBPool.Return(db_conn, ctx)
 
 	if err1 != nil {
 		if db_helpers.CheckNoRowsInResultSet(err1) {
@@ -93,38 +95,51 @@ func ClientDownloadFunc(ctx ftp_context.Context, files_map *FileMapType) (err er
 
 		fi, ok := file_map.Get(db_fi.FilePath)
 		if !ok {
-			after = fmt.Sprintf(`"fi, ok := file_map.Get(db_fi.FilePath: %s) && !ok`, db_fi.FilePath)
-			if err2 := download_file(ctx, tmp); err2 != nil {
-				Logger.LogErr(loc, err2)
-				continue
-			}
+			go func(ctx ftp_context.Context, after string) {
+				defer recover_func(&after, loc)
+				defer ctx.Finished()
+				after = fmt.Sprintf(`"fi, ok := file_map.Get(db_fi.FilePath: %s) && !ok`, db_fi.FilePath)
+				if err2 := download_file(ctx, tmp); err2 != nil {
+					Logger.LogErr(loc, err2)
+					return
+				}
 
-			tmp.FileState = fstate_downloaded
-			file_map.Set(tmp.Path, tmp)
+				tmp.FileState = fstate_downloaded
+				file_map.Set(tmp.Path, tmp)
+			}(ctx.Add(), after)
 			continue
 		}
 
 		if fi.IsBefore(tmp.stats.ModTime()) {
-			after = fmt.Sprintf(` fi.IsBefore(tmp.stats.ModTime()); FilePath: %s`, fi.Path)
-			if err2 := download_file(ctx, tmp); err2 != nil {
-				Logger.LogErr(loc, err2)
-				continue
-			}
+			go func(ctx ftp_context.Context, after string) {
+				defer recover_func(&after, loc)
+				defer ctx.Finished()
+				after = fmt.Sprintf(` fi.IsBefore(tmp.stats.ModTime()); FilePath: %s`, fi.Path)
+				if err2 := download_file(ctx, tmp); err2 != nil {
+					Logger.LogErr(loc, err2)
+					return
+				}
 
-			tmp.FileState = fstate_downloaded
-			file_map.Set(tmp.Path, tmp)
+				tmp.FileState = fstate_downloaded
+				file_map.Set(tmp.Path, tmp)
+			}(ctx.Add(), after)
 			continue
 		}
 
 		if fi._download_err() || fi._to_download() || fi._os_err() {
-			after = fmt.Sprintf(`if fi._download_err() || fi._to_download() || fi._os_err(); FilePath: %s`, fi.Path)
-			if err2 := download_file(ctx, tmp); err2 != nil {
-				Logger.LogErr(loc, err2)
-				continue
-			}
+			go func(ctx ftp_context.Context, after string) {
+				defer recover_func(&after, loc)
+				defer ctx.Finished()
 
-			tmp.FileState = fstate_downloaded
-			file_map.Set(tmp.Path, tmp)
+				after = fmt.Sprintf(`if fi._download_err() || fi._to_download() || fi._os_err(); FilePath: %s`, fi.Path)
+				if err2 := download_file(ctx, tmp); err2 != nil {
+					Logger.LogErr(loc, err2)
+					return
+				}
+
+				tmp.FileState = fstate_downloaded
+				file_map.Set(tmp.Path, tmp)
+			}(ctx.Add(), after)
 			continue
 		}
 	}
@@ -137,8 +152,13 @@ func download_file(ctx ftp_context.Context, db_fi *FileItem) error {
 
 	file_path := db_fi.Full(storage_struct.StorageDirectory)
 	log.Println("downloading: ", file_path)
-	db_conn := db.DBPool.GetConn()
-	defer db.DBPool.Return(db_conn)
+	db_conn := db.DBPool.GetConn(ctx)
+	defer db.DBPool.Return(db_conn, ctx)
+	if db_conn.IsClosed() {
+		<-time.After(time.Millisecond)
+		return fmt.Errorf("database connection is closed")
+	}
+
 	db_data_res, err1 := DB.DownloadFileStepOneGetLatestData(ctx, db_conn, &db_fi.FileHash)
 	if err1 != nil {
 		db_fi.FileState = fstate_download_err

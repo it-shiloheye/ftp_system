@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	ftp_context "github.com/it-shiloheye/ftp_system/v3/lib/context"
 	db "github.com/it-shiloheye/ftp_system/v3/lib/db_access"
 	db_access "github.com/it-shiloheye/ftp_system/v3/lib/db_access/generated"
 	"github.com/it-shiloheye/ftp_system/v3/lib/logging"
@@ -19,7 +20,7 @@ import (
 
 var Logger = logging.Logger
 
-var DBPool = &db.DBPoolStruct{}
+var DBPool = db.DBPool
 var DB = db.DB
 var storage_struct = server_config.Storage
 
@@ -69,8 +70,9 @@ func (fls *FilesListCache) cached_fetch(ctx context.Context) ([]*db_access.GetFi
 
 func (fls *FilesListCache) fetch(ctx context.Context) ([]*db_access.GetFilesListRow, error) {
 	loc := log_item.Loc(`func (fls *FilesListCache) fetch(ctx context.Context) ([]*db_access.GetFilesListRow, error)`)
-	db_conn := DBPool.GetConn()
-	defer DBPool.Return(db_conn)
+	ftp_ctx := ftp_context.CreateNewContextWithParent(ctx)
+	db_conn := DBPool.GetConn(ftp_ctx)
+	defer DBPool.Return(db_conn, ftp_ctx)
 	fls.Lock()
 	defer fls.Unlock()
 	files_list, err1 := DB.GetFilesList(ctx, db_conn)

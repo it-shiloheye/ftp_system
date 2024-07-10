@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	ftp_base "github.com/it-shiloheye/ftp_system/v3/lib/base"
 	ftp_context "github.com/it-shiloheye/ftp_system/v3/lib/context"
 	db "github.com/it-shiloheye/ftp_system/v3/lib/db_access"
 	db_access "github.com/it-shiloheye/ftp_system/v3/lib/db_access/generated"
@@ -16,24 +17,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const after_db_conn = `db_conn := db.DBPool.GetConn()
+const after_db_conn = `db_conn := db.DBPool.GetConn(ctx)
 	files_list, err1 := DB.GetFilesList(ctx, db_conn)
-	defer db.DBPool.Return(db_conn)
+	defer db.DBPool.Return(db_conn,ctx)
 	db_files_list = files_list`
 
-func UploadFunc(ctx ftp_context.Context, files_map *FileMapType) (err error) {
+func UploadFunc(p_ctx ftp_context.Context, files_map *FileMapType) (err error) {
 	loc := log_item.Loc(`func UploadFunc(ctx ftp_context.Context, file_map FileMap) error`)
 	after := "setup"
-	defer ctx.Finished()
+	ctx := ftp_context.CreateNewContextWithParent(p_ctx)
+	defer p_ctx.Finished()
+	defer ctx.Wait()
 	defer recover_func(&after, loc)
 	// tickerf(&loc, 1, "at open of ticker")
 	if has_deadline, near_deadline := ctx.NearDeadline(time.Second); has_deadline && near_deadline {
 		return nil
 	}
-	db_conn := db.DBPool.GetConn()
+	db_conn := db.DBPool.GetConn(ctx)
 	after = "db_files_list, err1 := DB.GetFilesList(ctx, db_conn)"
 	db_files_list, err1 := DB.GetFilesList(ctx, db_conn)
-	defer db.DBPool.Return(db_conn)
+	db.DBPool.Return(db_conn, ctx)
 
 	if err1 != nil {
 		if strings.Contains(err1.Error(), "no rows in result set") {
@@ -46,11 +49,11 @@ func UploadFunc(ctx ftp_context.Context, files_map *FileMapType) (err error) {
 		return
 	}
 
-	db_file_map := FileMap{}
+	db_file_map := ftp_base.NewMutexedMap[*FileItem]()
 	after = "for _, db_fi := range db_files_list"
 	for _, db_fi := range db_files_list {
 
-		db_file_map[db_fi.FilePath] = &FileItem{
+		db_file_map.M[db_fi.FilePath] = &FileItem{
 			Path:      db_fi.FilePath,
 			FileState: FileState(db_fi.FileState),
 			FileHash:  *db_fi.FileHash,
@@ -61,6 +64,7 @@ func UploadFunc(ctx ftp_context.Context, files_map *FileMapType) (err error) {
 				modtime: db_fi.ModTime.Time,
 				is_dir:  false,
 			},
+			db_row: db_fi,
 		}
 	}
 
@@ -70,67 +74,72 @@ func UploadFunc(ctx ftp_context.Context, files_map *FileMapType) (err error) {
 	defer file_map.Unlock()
 	after = "for short_filepath, f_i := range file_map.M"
 	for short_filepath, f_i := range file_map.M {
-		if has_deadline, near_deadline := ctx.NearDeadline(time.Second); has_deadline && near_deadline {
-			return nil
-		}
-		switch f_i.FileState {
-		case fstate_to_upload:
-			fallthrough
-		case fstate_upload_err:
-			f_i.FileState = fstate_to_upload
-			err1 := upload_a_file(ctx, f_i)
-			if err1 != nil {
-				Logger.LogErr(loc, err1)
+		go func(ctx ftp_context.Context, after string) {
+			defer recover_func(&after, loc)
 
+			if has_deadline, near_deadline := ctx.NearDeadline(time.Second); has_deadline && near_deadline {
+				return
 			}
-			continue
-		}
+			switch f_i.FileState {
+			case fstate_to_upload:
+				fallthrough
+			case fstate_upload_err:
+				f_i.FileState = fstate_to_upload
+				err1 := upload_a_file(ctx, f_i)
+				if err1 != nil {
+					Logger.LogErr(loc, err1)
 
-		full_filepath := f_i.Full(storage_struct.StorageDirectory)
-
-		after = fmt.Sprintf("db_fi, ok := db_file_map[short_filepath: %s])", full_filepath)
-		db_fi, ok := db_file_map[short_filepath]
-		if !ok {
-			after = "err1 := upload_a_file(ctx, f_i): !ok"
-			err1 := upload_a_file(ctx, f_i)
-			if err1 != nil {
-				Logger.LogErr(loc, err1)
-
+				}
+				return
 			}
-			continue
-		}
 
-		if db_fi.FileHash == f_i.FileHash {
-			f_i.FileState = fstate_unchanged
-			continue
-		}
+			full_filepath := f_i.Full(storage_struct.StorageDirectory)
 
-		after = fmt.Sprintf("stats, err2 := os.Stat(full_filepath: %s)", full_filepath)
-		stats, err2 := os.Stat(full_filepath)
-		if err2 != nil || stats == nil {
-			if errors.Is(err2, os.ErrNotExist) || errors.Is(err2, os.ErrInvalid) {
+			after = fmt.Sprintf("db_fi, ok := db_file_map[short_filepath: %s])", full_filepath)
+			db_fi, ok := db_file_map.Get(short_filepath)
+			if !ok {
+				after = "err1 := upload_a_file(ctx, f_i): !ok"
+				err1 := upload_a_file(ctx, f_i)
+				if err1 != nil {
+					Logger.LogErr(loc, err1)
+
+				}
+				return
+			}
+
+			if db_fi.FileHash == f_i.FileHash {
+				f_i.FileState = fstate_unchanged
+				return
+			}
+
+			after = fmt.Sprintf("stats, err2 := os.Stat(full_filepath: %s)", full_filepath)
+			stats, err2 := os.Stat(full_filepath)
+			if err2 != nil || stats == nil {
+				if errors.Is(err2, os.ErrNotExist) || errors.Is(err2, os.ErrInvalid) {
+					f_i.FileState = fstate_to_download
+					return
+				}
+
+				f_i.FileState = fstate_os_err
+				Logger.LogErr(loc, err2)
+				return
+			}
+
+			after = "if db_fi.IsBefore(stats.ModTime()) "
+			if db_fi.IsBefore(stats.ModTime()) {
+				after = "err1 := upload_a_file(ctx, f_i): db_fi.IsBefore"
+				err1 := upload_a_file(ctx, f_i)
+				if err1 != nil {
+					Logger.LogErr(loc, err1)
+
+				}
+				return
+			} else if db_fi.IsAfter(stats.ModTime()) {
 				f_i.FileState = fstate_to_download
-				continue
+				return
 			}
 
-			f_i.FileState = fstate_os_err
-			Logger.LogErr(loc, err2)
-			continue
-		}
-
-		after = "if db_fi.IsBefore(stats.ModTime()) "
-		if db_fi.IsBefore(stats.ModTime()) {
-			after = "err1 := upload_a_file(ctx, f_i): db_fi.IsBefore"
-			err1 := upload_a_file(ctx, f_i)
-			if err1 != nil {
-				Logger.LogErr(loc, err1)
-
-			}
-			continue
-		} else if db_fi.IsAfter(stats.ModTime()) {
-			f_i.FileState = fstate_to_download
-			continue
-		}
+		}(ctx.Add(), after)
 
 	}
 
@@ -151,22 +160,49 @@ func get_file_type(file_name string) string {
 
 func upload_a_file(ctx ftp_context.Context, fi *FileItem) error {
 	loc := log_item.Loc(`upload_a_file(ctx ftp_context.Context, fi *FileItem) error`)
-
-	db_conn := db.DBPool.GetConn()
-	defer db.DBPool.Return(db_conn)
+	defer fi.Reset()
+	db_conn := db.DBPool.GetConn(ctx)
+	defer db.DBPool.Return(db_conn, ctx)
 	// tickerf(&loc, 1, "before readfile", fi.Path)
 	file_path := fi.Full(storage_struct.StorageDirectory)
-	d, err1 := os.ReadFile(file_path)
-	if err1 != nil {
-		if errors.Is(err1, os.ErrNotExist) {
-			fi.FileState = fstate_to_download
-			return nil
-		}
+
+	if !fi.CheckExists() {
 		fi.FileState = fstate_os_err
-		return Logger.LogErr(loc, &log_item.LogItem{
-			After:     fmt.Sprintf(`d, err1 := os.ReadFile(file_path: %s)`, file_path),
-			CallStack: []error{err1},
-		})
+		return fmt.Errorf("file \"%s\" doesn't exist on local machine", fi.Path)
+	}
+
+	var d []byte
+	var err1 error
+	if fi.db_row != nil {
+		match, err0 := fi.CheckHash(*fi.db_row.FileHash)
+		if match {
+			Logger.Logf(loc, "no uploaded needed for: %s", fi.Path)
+			return nil
+
+		}
+		if err0 != nil {
+			if errors.Is(err0, os.ErrNotExist) {
+
+				fi.FileState = fstate_to_download
+				return fmt.Errorf("file \"%s\" doesn't exist on local machine", fi.Path)
+			}
+			Logger.LogErr(loc, err0)
+		}
+
+		d = fi.FileD
+	} else {
+		d, err1 = os.ReadFile(file_path)
+		if err1 != nil {
+			if errors.Is(err1, os.ErrNotExist) {
+				fi.FileState = fstate_to_download
+				return nil
+			}
+			fi.FileState = fstate_os_err
+			return Logger.LogErr(loc, &log_item.LogItem{
+				After:     fmt.Sprintf(`d, err1 := os.ReadFile(file_path: %s)`, file_path),
+				CallStack: []error{err1},
+			})
+		}
 	}
 
 	// log.Fatalln(d)
@@ -247,8 +283,8 @@ func PermanentUploadLoop(ctx ftp_context.Context) error {
 	max_age := storage_struct.UploadDirs.MaxAgeInDaysBeforeDelete *
 		int(time.Hour) *
 		24
-	db_conn := db.DBPool.GetConn()
-	defer db.DBPool.Return(db_conn)
+	db_conn := db.DBPool.GetConn(ctx)
+	defer db.DBPool.Return(db_conn, ctx)
 	for _, permanent_upload_dir := range storage_struct.UploadDirs.UploadDirs {
 
 		err1 := WalkDir(permanent_upload_dir, files_map, &fsnotify.Watcher{})

@@ -37,3 +37,11 @@ INSERT INTO file_tracker (
     current_hash_id,
     file_state
 ) VALUES ($1, $2, $3, 'uploaded');
+
+
+-- name: CheckChangesStepOne :exec
+SELECT DISTINCT file_metadata.file_path, file_metadata.file_data_id, file_data.file_hash,file_metadata.mod_time FROM file_metadata
+JOIN file_data ON file_metadata.file_data_id = file_data.id
+ORDER BY
+    file_metadata.file_data_id DESC,
+    file_metadata.mod_time DESC;

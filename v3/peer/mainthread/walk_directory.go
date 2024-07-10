@@ -1,14 +1,19 @@
 package mainthread
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+	"sync"
 
 	"github.com/fsnotify/fsnotify"
+
+	db_access "github.com/it-shiloheye/ftp_system/v3/lib/db_access/generated"
+	"github.com/it-shiloheye/ftp_system/v3/lib/file_handler/v2"
 	"github.com/it-shiloheye/ftp_system/v3/lib/logging/log_item"
 )
 
@@ -54,10 +59,13 @@ func (f FileState) IsErr() bool {
 
 type FileItem struct {
 	FileState `json:"file_state"`
+	FileD     []byte
 	FileHash  string `json:"file_hash"`
 	ListIndex int    `json:"db_index"`
 	Path      string `json:"file_path"`
 	stats     fs.FileInfo
+	sync.RWMutex
+	db_row *db_access.GetFilesListRow
 }
 
 func WalkDir(storage_path string, files_map *FileMapType, watcher *fsnotify.Watcher) (err error) {
@@ -241,4 +249,73 @@ func (fi *FiFileInfo) IsDir() bool { // abbreviation for Mode().IsDir(){
 }
 func (fi *FiFileInfo) Sys() any { // underlying data source (can return nil){
 	return nil
+}
+
+var file_hash_pool = NewFileHashPool()
+
+type FileHashPool struct {
+	hashes chan *filehandler.BytesStore
+}
+
+func NewFileHashPool() (fp *FileHashPool) {
+	fp = &FileHashPool{}
+	fp.hashes = make(chan *filehandler.BytesStore, 10)
+	for t := 10; t > 0; t -= 1 {
+
+		fp.hashes <- filehandler.NewBytesStore()
+	}
+
+	return
+}
+
+func (fp *FileHashPool) GetByteStore() *filehandler.BytesStore {
+	return <-fp.hashes
+}
+func (fp *FileHashPool) ReturnByteStore(fb *filehandler.BytesStore) {
+	fp.hashes <- fb
+}
+
+func (fi *FileItem) CheckExists() bool {
+	_, err1 := os.Stat(fi.Path)
+	return errors.Is(err1, os.ErrExist)
+}
+
+func (fi *FileItem) CheckHash(file_hash string) (match bool, err error) {
+	loc := log_item.Loc(`func (fi *FileItem) CheckHash(file_hash string) (match bool, err error)`)
+	bs := file_hash_pool.GetByteStore()
+	defer file_hash_pool.ReturnByteStore(bs)
+	_ = loc
+
+	d, err1 := os.ReadFile(fi.Path)
+	if err1 != nil {
+		err = err1
+		if errors.Is(err1, os.ErrNotExist) {
+
+			return
+		}
+		Logger.LogErr(loc, err1)
+		return
+	}
+	fi.FileD = d
+
+	bs.Reset()
+	_, err2 := bs.Read(d)
+	if err2 != nil {
+		err = Logger.LogErr(loc, err2)
+		return
+	}
+	test_hash, err3 := bs.Hash()
+	if err3 != nil {
+		err = Logger.LogErr(loc, err3)
+		return
+	}
+	fi.FileHash = test_hash
+	match = file_hash == test_hash
+
+	return
+}
+
+func (fi *FileItem) Reset() {
+	fi.FileD = nil
+	fi.db_row = nil
 }

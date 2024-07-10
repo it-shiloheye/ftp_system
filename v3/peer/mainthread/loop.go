@@ -111,8 +111,8 @@ func StorageDownloadFunc(ctx *ftp_context.ContextStruct, files_map *FileMapType)
 
 	// file_map := files_map.FileMap
 
-	db_conn := db.DBPool.GetConn()
-	defer db.DBPool.Return(db_conn)
+	db_conn := db.DBPool.GetConn(ctx)
+	defer db.DBPool.Return(db_conn, ctx)
 
 	_, err1 := DB.DownloadStoreBulk(ctx, db_conn, storage_struct.PeerId.Bytes)
 	if err1 != nil {

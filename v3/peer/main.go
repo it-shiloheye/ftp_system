@@ -51,6 +51,7 @@ func main() {
 
 func connect_db_client(ctx ftp_context.Context, storage_struct *server_config.StorageStruct) {
 	loc := log_item.Loc(`func connect_client(ctx ftp_context.Context, storage_struct *server_config.StorageStruct)`)
+	Logger.Logf(loc, "attempting to connect to db")
 	for {
 		err1 := db_helpers.ConnectClient(ctx, storage_struct)
 		if err1 != nil {
